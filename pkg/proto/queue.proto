@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package crawler.v1;
+
+import "google/api/annotations.proto";
+
+message Queue {
+    int64      id         = 1;
+    string     queue      = 2;
+    string     domain     = 3;
+    string     cron       = 4;
+    int64      quantity   = 5;
+    bool       is_active  = 6;
+}
+
+message CreateQueueRequest {
+    Queue queue = 1;
+}
+message CreateQueueResponse {
+    int64 id = 1;
+    string status = 2;
+}
+message GetQueuesRequest {
+    int64 limit = 1;
+    int64 offset = 2;
+}
+message GetQueuesResponse {
+    repeated Queue queues = 1;
+}
+message UpdateQueueRequest {
+    int64 id = 1;
+    Queue queue = 2;
+}
+message UpdateQueueResponse {
+    string status = 1;
+}
+
+service QueueService {
+    rpc CreateQueue(CreateQueueRequest) returns (CreateQueueResponse) {
+        option (google.api.http) = {
+			post: "/api/v1/queue"
+            body: "*"
+		};
+    }
+    rpc GetQueues(GetQueuesRequest) returns (GetQueuesResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/queue"
+        };
+    }
+    rpc UpdateQueue(UpdateQueueRequest) returns (UpdateQueueResponse) {
+        option (google.api.http) = {
+            put: "/api/v1/queue/{id}"
+            body: "*"	
+        };
+    }
+}

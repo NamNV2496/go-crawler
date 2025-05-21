@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package crawler.v1;
+
+import "google/api/annotations.proto";
+
+message Url {
+    string id = 1;
+    string url = 2;
+    string description = 3;
+    string queue = 4;
+    string domain = 5;
+    bool is_active = 6;
+    string created_at = 7;
+    string updated_at = 8;
+}
+
+message CreateUrlRequest {
+	Url url = 1;
+}
+message CreateUrlResponse {
+	string id = 1;
+    string status = 2;
+}
+message GetUrlsRequest {
+    int32 limit = 1;
+    int32 offset = 2;
+}
+message GetUrlsResponse {
+    repeated Url urls = 1;
+}
+
+message UpdateUrlRequest {
+    string id = 1;
+    Url url = 2;
+}
+message UpdateUrlResponse {
+    string id = 1;
+    string status = 2;
+}
+service UrlService {
+    rpc CreateUrl(CreateUrlRequest) returns (CreateUrlResponse) {
+        option (google.api.http) = {
+			post: "/api/v1/url"
+            body: "*"
+		};
+    }
+    rpc GetUrls(GetUrlsRequest) returns (GetUrlsResponse) {
+        option (google.api.http) = {
+			get: "/api/v1/urls"
+		};
+    }
+    rpc UpdateUrl(UpdateUrlRequest) returns (UpdateUrlResponse) {
+        option (google.api.http) = {
+			put: "/api/v1/urls/{id}"
+            body: "*"
+		};
+    }
+}
