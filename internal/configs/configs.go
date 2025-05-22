@@ -3,17 +3,18 @@ package configs
 import "github.com/caarlos0/env/v6"
 
 type AppConfig struct {
-	GRPCPort string `env:"grpc_port" envDefault:":9090"`
-	HTTPPort string `env:"http_port" envDefault:"8080"`
+	GRPCPort string   `env:"grpc_port" envDefault:":9090"`
+	HTTPPort string   `env:"http_port" envDefault:"8080"`
+	Domains  []string `env:"domains" envDefault:"gold,diamond"`
 }
 type KafkaProducerConfig struct {
-	Broker string `env:"producer_broker" envDefault:"localhost:9092"`
-	Topic  string `env:"producer_topic" envDefault:"crawler"`
+	Brokers string   `env:"producer_broker" envDefault:"localhost:29092"`
+	Topic   []string `env:"producer_topic" envDefault:"normal,priority"`
 }
 
 type KafkaConsumerConfig struct {
-	Broker string `env:"consumer_broker" envDefault:"localhost:9092"`
-	Topic  string `env:"consumer_topic" envDefault:"crawler"`
+	Brokers []string `env:"consumer_broker" envDefault:"localhost:29092"`
+	Topic   []string `env:"consumer_topic" envDefault:"normal,priority"`
 }
 
 type DatabaseConfig struct {

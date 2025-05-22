@@ -39,6 +39,7 @@ func (u *UrlController) CreateUrl(ctx context.Context, req *crawlerv1.CreateUrlR
 		Queue:       req.Url.Queue,
 		Domain:      req.Url.Domain,
 		IsActive:    req.Url.IsActive,
+		Method:      req.Url.Method,
 		// ID, CreatedAt, UpdatedAt will be set by the service/repository
 	}
 
@@ -70,6 +71,7 @@ func (u *UrlController) GetUrls(ctx context.Context, req *crawlerv1.GetUrlsReque
 		protoUrls[i] = &crawlerv1.Url{
 			Id:          strconv.FormatInt(url.Id, 10), // Convert int64 to string for the ID field in the response struc
 			Url:         url.Url,
+			Method:      url.Method,
 			Description: url.Description,
 			Queue:       url.Queue,
 			Domain:      url.Domain,
@@ -95,6 +97,7 @@ func (u *UrlController) UpdateUrl(ctx context.Context, req *crawlerv1.UpdateUrlR
 	domainUrl := &domain.Url{
 		Id:          id, // Convert string ID to int64
 		Url:         req.Url.Url,
+		Method:      req.Url.Method,
 		Description: req.Url.Description,
 		Queue:       req.Url.Queue,
 		Domain:      req.Url.Domain,

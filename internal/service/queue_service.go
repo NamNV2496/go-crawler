@@ -32,7 +32,7 @@ func (s *QueueService) CreateQueue(ctx context.Context, queue *domain.Queue) (in
 	return s.queueRepo.CreateQueue(ctx, queue)
 }
 func (s *QueueService) GetQueues(ctx context.Context, limit, offset int32) ([]*domain.Queue, error) {
-	return s.queueRepo.GetQueues(ctx, limit, offset)
+	return s.queueRepo.GetQueuesByDomain(ctx, nil, limit, offset)
 }
 func (s *QueueService) UpdateQueue(ctx context.Context, queue *domain.Queue) error {
 	return s.queueRepo.UpdateQueue(ctx, queue)

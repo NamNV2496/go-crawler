@@ -60,6 +60,8 @@ func (m *Url) validate(all bool) error {
 
 	// no validation rules for Url
 
+	// no validation rules for Method
+
 	// no validation rules for Description
 
 	// no validation rules for Queue

@@ -26,12 +26,13 @@ type Url struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
-	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Queue         string                 `protobuf:"bytes,4,opt,name=queue,proto3" json:"queue,omitempty"`
-	Domain        string                 `protobuf:"bytes,5,opt,name=domain,proto3" json:"domain,omitempty"`
-	IsActive      bool                   `protobuf:"varint,6,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     string                 `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Method        string                 `protobuf:"bytes,3,opt,name=method,proto3" json:"method,omitempty"`
+	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Queue         string                 `protobuf:"bytes,5,opt,name=queue,proto3" json:"queue,omitempty"`
+	Domain        string                 `protobuf:"bytes,6,opt,name=domain,proto3" json:"domain,omitempty"`
+	IsActive      bool                   `protobuf:"varint,7,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     string                 `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -76,6 +77,13 @@ func (x *Url) GetId() string {
 func (x *Url) GetUrl() string {
 	if x != nil {
 		return x.Url
+	}
+	return ""
+}
+
+func (x *Url) GetMethod() string {
+	if x != nil {
+		return x.Method
 	}
 	return ""
 }
@@ -423,18 +431,19 @@ var File_pkg_proto_url_proto protoreflect.FileDescriptor
 const file_pkg_proto_url_proto_rawDesc = "" +
 	"\n" +
 	"\x13pkg/proto/url.proto\x12\n" +
-	"crawler.v1\x1a\x1cgoogle/api/annotations.proto\"\xd2\x01\n" +
+	"crawler.v1\x1a\x1cgoogle/api/annotations.proto\"\xea\x01\n" +
 	"\x03Url\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
-	"\x03url\x18\x02 \x01(\tR\x03url\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x14\n" +
-	"\x05queue\x18\x04 \x01(\tR\x05queue\x12\x16\n" +
-	"\x06domain\x18\x05 \x01(\tR\x06domain\x12\x1b\n" +
-	"\tis_active\x18\x06 \x01(\bR\bisActive\x12\x1d\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\x12\x16\n" +
+	"\x06method\x18\x03 \x01(\tR\x06method\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x14\n" +
+	"\x05queue\x18\x05 \x01(\tR\x05queue\x12\x16\n" +
+	"\x06domain\x18\x06 \x01(\tR\x06domain\x12\x1b\n" +
+	"\tis_active\x18\a \x01(\bR\bisActive\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\a \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"created_at\x18\b \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\b \x01(\tR\tupdatedAt\"5\n" +
+	"updated_at\x18\t \x01(\tR\tupdatedAt\"5\n" +
 	"\x10CreateUrlRequest\x12!\n" +
 	"\x03url\x18\x01 \x01(\v2\x0f.crawler.v1.UrlR\x03url\";\n" +
 	"\x11CreateUrlResponse\x12\x0e\n" +

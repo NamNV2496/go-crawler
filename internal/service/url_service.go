@@ -57,6 +57,7 @@ func (s *UrlService) UpdateUrl(ctx context.Context, id int64, url *domain.Url) e
 	existingUrl.Queue = url.Queue
 	existingUrl.Domain = url.Domain
 	existingUrl.IsActive = url.IsActive
+	existingUrl.Method = url.Method
 
 	err = s.repo.UpdateUrl(ctx, existingUrl)
 	if err != nil {

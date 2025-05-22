@@ -9,7 +9,7 @@ import (
 
 type IQueueRepository interface {
 	CreateQueue(ctx context.Context, queue *domain.Queue) (int64, error)
-	GetQueues(ctx context.Context, limit, offset int32) ([]*domain.Queue, error)
+	GetQueuesByDomain(ctx context.Context, domains []string, limit, offset int32) ([]*domain.Queue, error)
 	UpdateQueue(ctx context.Context, queue *domain.Queue) error
 	CountQueue(ctx context.Context) (int64, error)
 }
@@ -33,9 +33,16 @@ func (r *QueueRepository) CreateQueue(ctx context.Context, queue *domain.Queue) 
 	}
 	return queue.Id, nil
 }
-func (r *QueueRepository) GetQueues(ctx context.Context, limit, offset int32) ([]*domain.Queue, error) {
+func (r *QueueRepository) GetQueuesByDomain(ctx context.Context, domains []string, limit, offset int32) ([]*domain.Queue, error) {
 	var queues []*domain.Queue
-	err := r.db.Limit(int(limit)).Offset(int(offset)).Find(&queues).Error
+
+	tx := r.db.Limit(int(limit)).
+		Offset(int(offset)).Where("is_active = ?", true)
+	if len(domains) > 0 {
+		tx = tx.Where("domain IN ?", domains)
+	}
+
+	err := tx.Find(&queues).Error
 	if err != nil {
 		return nil, err
 	}

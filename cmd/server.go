@@ -12,6 +12,7 @@ import (
 	"github.com/namnv2496/crawler/internal/controller"
 	"github.com/namnv2496/crawler/internal/repository"
 	"github.com/namnv2496/crawler/internal/service"
+	"github.com/namnv2496/crawler/internal/service/mq"
 	crawlerv1 "github.com/namnv2496/crawler/pkg/generated/pkg/proto"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
@@ -42,6 +43,9 @@ func InvokeServer(invokers ...any) *fx.App {
 			fx.Annotate(controller.NewQueueController, fx.As(new(crawlerv1.QueueServiceServer))),
 			fx.Annotate(service.NewQueueService, fx.As(new(service.IQueueService))),
 			fx.Annotate(repository.NewQueueRepository, fx.As(new(repository.IQueueRepository))),
+			// MQ
+			fx.Annotate(mq.NewKafkaProducer, fx.As(new(mq.IProducer))),
+			fx.Annotate(service.NewUrlWorker, fx.As(new(service.IUrlWorker))),
 		),
 		fx.Supply(
 			config,
@@ -56,6 +60,7 @@ func startServer(
 	config *configs.Config,
 	urlController crawlerv1.UrlServiceServer,
 	queueController crawlerv1.QueueServiceServer,
+	urlWorker service.IUrlWorker,
 ) error {
 	listener, err := net.Listen("tcp", config.AppConfig.GRPCPort)
 	if err != nil {
@@ -90,5 +95,12 @@ func startServer(
 		return fmt.Errorf("failed to register handler: %v", err)
 	}
 	fmt.Printf("http server is running on %s\n", config.AppConfig.HTTPPort)
+	//
+	go func() {
+		if err := urlWorker.Start(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+
 	return server.Serve(listener)
 }

@@ -1,9 +1,12 @@
 package service
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"io"
 	"net/http"
-	"net/url"
+	"os/exec"
 	"strings"
 	"sync"
 
@@ -11,7 +14,7 @@ import (
 )
 
 type ICrawlerService interface {
-	Crawl(startURL string) (map[string]string, error)
+	Crawl(ctx context.Context, startURL, method string) error
 }
 
 type Crawler struct {
@@ -22,33 +25,27 @@ type Crawler struct {
 }
 
 // NewCrawler creates a new crawler instance
-func NewCrawler(maxDepth int) *Crawler {
+func NewCrawler() *Crawler {
 	return &Crawler{
-		maxDepth: maxDepth,
+		maxDepth: 3,
 		visited:  make(map[string]bool),
 		results:  make(map[string]string),
 	}
 }
 
 // Crawl starts crawling from the given URL up to the maximum depth
-func (c *Crawler) Crawl(startURL string) (map[string]string, error) {
-	err := c.crawlPage(startURL, 0)
+func (c *Crawler) Crawl(ctx context.Context, startURL, method string) error {
+	err := c.crawlPage(startURL, method, 0)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return c.results, nil
+	return nil
 }
 
-// crawlPage crawls a single page and its links recursively
-func (c *Crawler) crawlPage(pageURL string, depth int) error {
+func (c *Crawler) crawlPage(pageURL, method string, depth int) error {
 	if depth > c.maxDepth {
 		return nil
 	}
-
-	// Normalize URL
-	pageURL = normalizeURL(pageURL)
-
-	// Check if already visited
 	c.mutex.Lock()
 	if c.visited[pageURL] {
 		c.mutex.Unlock()
@@ -56,46 +53,96 @@ func (c *Crawler) crawlPage(pageURL string, depth int) error {
 	}
 	c.visited[pageURL] = true
 	c.mutex.Unlock()
+	switch method {
+	case "GET":
+		c.crawlGET(pageURL)
 
-	// Fetch the page
+	case "POST":
+		c.crawlPOST(pageURL)
+	case "CURL":
+		c.crawlCurl(pageURL)
+	default:
+		return fmt.Errorf("unsupported HTTP method: %s", method)
+	}
+	return nil
+}
+
+func (c *Crawler) crawlGET(pageURL string) error {
 	resp, err := http.Get(pageURL)
 	if err != nil {
 		return fmt.Errorf("error fetching %s: %v", pageURL, err)
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("non-200 status code: %d for %s", resp.StatusCode, pageURL)
 	}
-
-	// Parse HTML
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
 		return fmt.Errorf("error parsing HTML: %v", err)
 	}
-
-	// Extract title
 	title := extractTitle(doc)
-
-	// Store result
 	c.mutex.Lock()
-	c.results[pageURL] = title
+	c.results[title] = title
 	c.mutex.Unlock()
-
-	// Extract links and crawl them
-	links := extractLinks(doc, pageURL)
-	for _, link := range links {
-		err := c.crawlPage(link, depth+1)
-		if err != nil {
-			// Just log the error and continue with other links
-			fmt.Printf("Error crawling %s: %v\n", link, err)
-		}
-	}
-
 	return nil
 }
 
-// extractTitle extracts the title from HTML
+func (c *Crawler) crawlPOST(pageURL string) error {
+	resp, err := http.Post(pageURL, "application/x-www-form-urlencoded", nil)
+	if err != nil {
+		return fmt.Errorf("error posting %s: %v", pageURL, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("non-200 status code: %d for %s", resp.StatusCode, pageURL)
+	}
+	doc, err := html.Parse(resp.Body)
+	if err != nil {
+		return fmt.Errorf("error parsing HTML: %v", err)
+	}
+	title := extractTitle(doc)
+	c.mutex.Lock()
+	c.results[title] = title
+	c.mutex.Unlock()
+	return nil
+}
+
+func (c *Crawler) crawlCurl(pageURL string) (io.ReadCloser, error) {
+	// Parse the curl command string
+	parts := strings.Split(pageURL, "--")
+	var args []string
+
+	// Skip the first part as it's the 'curl' command itself
+	for _, part := range parts[1:] {
+		// Trim spaces
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		// Split by first space to separate flag from value
+		flagAndValue := strings.SplitN(part, " ", 2)
+		if len(flagAndValue) == 2 {
+			// Add the flag with '--' prefix
+			args = append(args, "--"+flagAndValue[0])
+			// Remove surrounding quotes if present and add the value
+			value := strings.Trim(strings.TrimSpace(flagAndValue[1]), "'`")
+			args = append(args, value)
+		}
+	}
+
+	// Create and execute command
+	cmd := exec.Command("curl", args...)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("error executing curl command: %v", err)
+	}
+	c.mutex.Lock()
+	c.results["test"] = string(output)
+	c.mutex.Unlock()
+	return io.NopCloser(bytes.NewReader(output)), nil
+}
+
 func extractTitle(n *html.Node) string {
 	if n.Type == html.ElementNode && n.Data == "title" {
 		if n.FirstChild != nil {
@@ -103,77 +150,35 @@ func extractTitle(n *html.Node) string {
 		}
 		return ""
 	}
-
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		if title := extractTitle(c); title != "" {
 			return title
 		}
 	}
-
 	return ""
 }
 
-// extractLinks extracts all links from HTML
 func extractLinks(n *html.Node, baseURL string) []string {
 	var links []string
-
 	if n.Type == html.ElementNode && n.Data == "a" {
 		for _, attr := range n.Attr {
 			if attr.Key == "href" {
-				absURL, err := resolveURL(baseURL, attr.Val)
-				if err == nil && isValidURL(absURL) {
-					links = append(links, absURL)
+				if isValidURL(baseURL) {
+					links = append(links, baseURL)
 				}
 				break
 			}
 		}
 	}
-
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		links = append(links, extractLinks(c, baseURL)...)
 	}
-
 	return links
 }
 
-// resolveURL resolves a relative URL to an absolute URL
-func resolveURL(baseURL, relURL string) (string, error) {
-	base, err := url.Parse(baseURL)
-	if err != nil {
-		return "", err
-	}
-
-	rel, err := url.Parse(relURL)
-	if err != nil {
-		return "", err
-	}
-
-	absURL := base.ResolveReference(rel)
-	return absURL.String(), nil
-}
-
-// isValidURL checks if a URL is valid for crawling
 func isValidURL(urlStr string) bool {
-	// Skip non-HTTP/HTTPS URLs
 	if !strings.HasPrefix(urlStr, "http://") && !strings.HasPrefix(urlStr, "https://") {
 		return false
 	}
-
-	// Add more filters as needed (e.g., file extensions, domains)
 	return true
-}
-
-// normalizeURL normalizes a URL by removing fragments and some query parameters
-func normalizeURL(urlStr string) string {
-	parsedURL, err := url.Parse(urlStr)
-	if err != nil {
-		return urlStr
-	}
-
-	// Remove fragment
-	parsedURL.Fragment = ""
-
-	// You can add more normalization rules here
-
-	return parsedURL.String()
 }

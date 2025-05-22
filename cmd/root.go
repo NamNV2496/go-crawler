@@ -8,6 +8,6 @@ func Execute() error {
 		Short: "A simple web crawler",
 	}
 	rootCmd.AddCommand(serverCmd)
-	rootCmd.AddCommand(workerCmd)
+	rootCmd.AddCommand(CrawlerWorkerCmd)
 	return rootCmd.Execute()
 }
