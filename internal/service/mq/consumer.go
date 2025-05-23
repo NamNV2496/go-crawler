@@ -20,6 +20,7 @@ func NewKafkaConsumer(
 		consumers = append(consumers, kafka.NewReader(kafka.ReaderConfig{
 			Brokers:   conf.KafkaConsumerConfig.Brokers,
 			Topic:     topic,
+			GroupID:   conf.KafkaConsumerConfig.GroupID,
 			Partition: 0,
 			MaxBytes:  10e6, // 10MB
 		}))

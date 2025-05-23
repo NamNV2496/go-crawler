@@ -12,8 +12,8 @@ type IUrlRepository interface {
 	GetUrls(ctx context.Context, limit, offset int32) ([]*domain.Url, error)
 	UpdateUrl(ctx context.Context, url *domain.Url) error
 	GetUrlByID(ctx context.Context, id int64) (*domain.Url, error)
-	GetUrlByDomainAndQueue(ctx context.Context, urlDomain, queue string, limit, offset int) ([]*domain.Url, error)
-	CountUrlByDomainAndQueue(ctx context.Context, urlDomain, queue string) (int64, error)
+	GetUrlByDomainsAndQueues(ctx context.Context, urlDomain, queue []string, limit, offset int) ([]*domain.Url, error)
+	CountUrlByDomainsAndQueues(ctx context.Context, domains, queues []string) (int64, error)
 }
 
 type UrlRepository struct {
@@ -59,10 +59,10 @@ func (r *UrlRepository) GetUrlByID(ctx context.Context, id int64) (*domain.Url, 
 	return &url, nil
 }
 
-func (r *UrlRepository) GetUrlByDomainAndQueue(ctx context.Context, urlDomain, queue string, limit, offset int) ([]*domain.Url, error) {
+func (r *UrlRepository) GetUrlByDomainsAndQueues(ctx context.Context, urlDomain, queue []string, limit, offset int) ([]*domain.Url, error) {
 	var urls []*domain.Url
 	result := r.db.WithContext(ctx).
-		Where("domain = ? AND queue = ? AND is_active=true", urlDomain, queue).
+		Where("domain IN ? AND queue IN ? AND is_active=true", urlDomain, queue).
 		Offset(offset).
 		Limit(limit).
 		Find(&urls)
@@ -72,11 +72,11 @@ func (r *UrlRepository) GetUrlByDomainAndQueue(ctx context.Context, urlDomain, q
 	return urls, nil
 }
 
-func (r *UrlRepository) CountUrlByDomainAndQueue(ctx context.Context, urlDomain, queue string) (int64, error) {
+func (r *UrlRepository) CountUrlByDomainsAndQueues(ctx context.Context, domains, queues []string) (int64, error) {
 	var count int64
 	result := r.db.WithContext(ctx).
 		Model(&domain.Url{}).
-		Where("domain =? AND queue =? AND is_active=true", urlDomain, queue).
+		Where("domain IN ? AND queue IN ? AND is_active=true", domains, queues).
 		Count(&count)
 	if result.Error != nil {
 		return 0, result.Error

@@ -95,12 +95,10 @@ func startServer(
 		return fmt.Errorf("failed to register handler: %v", err)
 	}
 	fmt.Printf("http server is running on %s\n", config.AppConfig.HTTPPort)
-	//
-	go func() {
-		if err := urlWorker.Start(); err != nil {
-			fmt.Println(err)
-		}
-	}()
+	// start worker
+	if err := urlWorker.Start(); err != nil {
+		fmt.Println("failed to start publisher: %s", err)
+	}
 
 	return server.Serve(listener)
 }

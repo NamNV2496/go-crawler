@@ -49,7 +49,7 @@ func startCrawlerWorker(
 	consumer mq.IConsumer,
 	crawlerService service.ICrawlerService,
 ) {
-	log.Println("Start worker")
+	log.Println("Start consumer")
 	for range MaxWorker {
 		startConsumer(consumer, crawlerService)
 	}
@@ -63,9 +63,11 @@ func startConsumer(
 	// 	"CURL")
 	for {
 		for _, consumer := range consumer.GetConsumer() {
-			go func() {
-				ctx := context.Background()
-				defer consumer.Close()
+			ctx := context.Background()
+			rateLimter := time.Tick(time.Second / 10) // 10 requests per second
+			defer consumer.Close()
+			select {
+			case <-rateLimter:
 				m, err := consumer.ReadMessage(ctx)
 				if err != nil {
 					return
@@ -74,9 +76,14 @@ func startConsumer(
 				if err := json.Unmarshal(m.Value, &url); err != nil {
 					return
 				}
-				crawlerService.Crawl(ctx, url.Url, url.Method)
+				if err := crawlerService.Crawl(ctx, url.Url, url.Method); err != nil {
+					log.Println(err)
+					return
+				}
 				log.Printf("message at topic:%v partition:%v offset:%v	%s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
-			}()
+			case <-ctx.Done():
+				return
+			}
 		}
 	}
 }

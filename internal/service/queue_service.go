@@ -11,7 +11,6 @@ type IQueueService interface {
 	CreateQueue(ctx context.Context, queue *domain.Queue) (int64, error)
 	GetQueues(ctx context.Context, limit, offset int32) ([]*domain.Queue, error)
 	UpdateQueue(ctx context.Context, queue *domain.Queue) error
-	CountQueue(ctx context.Context) (int64, error)
 }
 
 type QueueService struct {
@@ -36,7 +35,4 @@ func (s *QueueService) GetQueues(ctx context.Context, limit, offset int32) ([]*d
 }
 func (s *QueueService) UpdateQueue(ctx context.Context, queue *domain.Queue) error {
 	return s.queueRepo.UpdateQueue(ctx, queue)
-}
-func (s *QueueService) CountQueue(ctx context.Context) (int64, error) {
-	return s.queueRepo.CountQueue(ctx)
 }

@@ -10,11 +10,13 @@ import (
 	"github.com/namnv2496/crawler/internal/entity"
 	"github.com/namnv2496/crawler/internal/repository"
 	"github.com/namnv2496/crawler/internal/service/mq"
+	"github.com/robfig/cron/v3"
 )
 
 const (
-	MaxWorker = 10
+	MaxUrls   = 1000
 	MaxQueue  = 100
+	MaxWorker = 10
 )
 
 type IUrlWorker interface {
@@ -22,6 +24,7 @@ type IUrlWorker interface {
 }
 
 type UrlWorker struct {
+	conf      *configs.Config
 	domains   []string
 	urlRepo   repository.IUrlRepository
 	queueRepo repository.IQueueRepository
@@ -35,6 +38,7 @@ func NewUrlWorker(
 	producers mq.IProducer,
 ) *UrlWorker {
 	return &UrlWorker{
+		conf:      conf,
 		domains:   conf.AppConfig.Domains,
 		urlRepo:   urlRepo,
 		queueRepo: queueRepo,
@@ -45,54 +49,73 @@ func NewUrlWorker(
 var _ IUrlWorker = &UrlWorker{}
 
 func (w *UrlWorker) Start() error {
+	cronJob := cron.New()
 	ctx := context.Background()
-	numberOfQueue, err := w.queueRepo.CountQueue(ctx)
+	_, err := cronJob.AddFunc(w.conf.Queue.Normal, func() {
+		w.startWorker(ctx, "normal")
+	})
 	if err != nil {
 		return err
 	}
-	for i := 0; i < int(numberOfQueue/MaxQueue)+1; i++ {
-		go w.startWorker(ctx, i)
+	_, err = cronJob.AddFunc(w.conf.Queue.Priority, func() {
+		w.startWorker(ctx, "priority")
+	})
+	if err != nil {
+		return err
 	}
+	cronJob.Start()
 	return nil
 }
 
-func (w *UrlWorker) startWorker(ctx context.Context, index int) {
-	queues, err := w.queueRepo.GetQueuesByDomain(ctx, w.domains, MaxQueue, int32(index*MaxQueue))
+func (w *UrlWorker) startWorker(ctx context.Context, queue string) {
+	log.Println("start worker: ", queue)
+	numberOfQueues, err := w.queueRepo.CountQueueByDomainsAndQueue(ctx, w.domains, queue)
 	if err != nil {
 		return
 	}
-	for _, queue := range queues {
-		go w.startCrawler(ctx, queue)
+	for i := range int(numberOfQueues/MaxUrls) + 1 {
+		queues, err := w.queueRepo.GetQueuesByDomainsAndQueue(ctx, w.domains, queue, MaxQueue, int32(i*MaxQueue))
+		if err != nil {
+			return
+		}
+		go w.publishToCrawler(ctx, queues)
 	}
 }
 
-func (w *UrlWorker) startCrawler(ctx context.Context, queue *domain.Queue) {
-	numberOfUrls, err := w.urlRepo.CountUrlByDomainAndQueue(ctx, queue.Domain, queue.Queue)
+func (w *UrlWorker) publishToCrawler(ctx context.Context, queues []*domain.Queue) {
+	domains := make([]string, len(queues))
+	queueUrls := make([]string, len(queues))
+	for i, queue := range queues {
+		domains[i] = queue.Domain
+		queueUrls[i] = queue.Queue
+	}
+
+	numberOfUrls, err := w.urlRepo.CountUrlByDomainsAndQueues(ctx, domains, queueUrls)
 	if err != nil {
 		return
 	}
-	for i := range int(numberOfUrls/MaxWorker) + 1 {
+	for i := range int(numberOfUrls/MaxUrls) + 1 {
 		go func() {
-			urls, err := w.urlRepo.GetUrlByDomainAndQueue(ctx, queue.Domain, queue.Queue, MaxWorker, i*MaxWorker)
+			urls, err := w.urlRepo.GetUrlByDomainsAndQueues(ctx, domains, queueUrls, MaxWorker, i*MaxWorker)
 			if err != nil {
 				return
 			}
 			for _, url := range urls {
 				data := entity.Url{
 					Url:         url.Url,
+					Method:      url.Method,
 					Description: url.Description,
 					Queue:       url.Queue,
 					Domain:      url.Domain,
 					IsActive:    url.IsActive,
 				}
-				go func() {
-					err := w.producers.Publish(ctx, url.Queue, strconv.Itoa(int(url.Id)), data)
-					if err != nil {
-						// retry
-						log.Println(err)
-						return
-					}
-				}()
+				log.Printf("publish to crawler queue: %s, url: %s", url.Queue, url.Url)
+				err := w.producers.Publish(ctx, url.Queue, strconv.Itoa(int(url.Id)), data)
+				if err != nil {
+					// retry
+					log.Println(err)
+					return
+				}
 			}
 		}()
 	}

@@ -10,8 +10,9 @@ import (
 type IQueueRepository interface {
 	CreateQueue(ctx context.Context, queue *domain.Queue) (int64, error)
 	GetQueuesByDomain(ctx context.Context, domains []string, limit, offset int32) ([]*domain.Queue, error)
+	GetQueuesByDomainsAndQueue(ctx context.Context, domains []string, queue string, limit, offset int32) ([]*domain.Queue, error)
 	UpdateQueue(ctx context.Context, queue *domain.Queue) error
-	CountQueue(ctx context.Context) (int64, error)
+	CountQueueByDomainsAndQueue(ctx context.Context, domains []string, queue string) (int64, error)
 }
 
 type QueueRepository struct {
@@ -33,13 +34,28 @@ func (r *QueueRepository) CreateQueue(ctx context.Context, queue *domain.Queue) 
 	}
 	return queue.Id, nil
 }
+
 func (r *QueueRepository) GetQueuesByDomain(ctx context.Context, domains []string, limit, offset int32) ([]*domain.Queue, error) {
+	var queues []*domain.Queue
+	tx := r.db.Limit(int(limit)).
+		Offset(int(offset)).Where("is_active =?", true)
+	if len(domains) > 0 {
+		tx = tx.Where("domain IN?", domains)
+	}
+	err := tx.Find(&queues).Error
+	if err != nil {
+		return nil, err
+	}
+	return queues, nil
+}
+
+func (r *QueueRepository) GetQueuesByDomainsAndQueue(ctx context.Context, domains []string, queue string, limit, offset int32) ([]*domain.Queue, error) {
 	var queues []*domain.Queue
 
 	tx := r.db.Limit(int(limit)).
 		Offset(int(offset)).Where("is_active = ?", true)
 	if len(domains) > 0 {
-		tx = tx.Where("domain IN ?", domains)
+		tx = tx.Where("domain IN ? AND queue = ?", domains, queue)
 	}
 
 	err := tx.Find(&queues).Error
@@ -57,9 +73,9 @@ func (r *QueueRepository) UpdateQueue(ctx context.Context, queue *domain.Queue) 
 	return nil
 }
 
-func (r *QueueRepository) CountQueue(ctx context.Context) (int64, error) {
+func (r *QueueRepository) CountQueueByDomainsAndQueue(ctx context.Context, domains []string, queue string) (int64, error) {
 	var count int64
-	err := r.db.Model(&domain.Queue{}).Count(&count).Error
+	err := r.db.Model(&domain.Queue{}).Where("domain in ? AND queue = ?", domains, queue).Count(&count).Error
 	if err != nil {
 		return 0, err
 	}

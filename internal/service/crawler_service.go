@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -138,6 +139,8 @@ func (c *Crawler) crawlCurl(pageURL string) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("error executing curl command: %v", err)
 	}
 	c.mutex.Lock()
+	log.Printf("output: %v\n", string(output))
+	log.Println("=======================================")
 	c.results["test"] = string(output)
 	c.mutex.Unlock()
 	return io.NopCloser(bytes.NewReader(output)), nil

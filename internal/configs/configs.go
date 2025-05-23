@@ -15,6 +15,7 @@ type KafkaProducerConfig struct {
 type KafkaConsumerConfig struct {
 	Brokers []string `env:"consumer_broker" envDefault:"localhost:29092"`
 	Topic   []string `env:"consumer_topic" envDefault:"normal,priority"`
+	GroupID string   `env:"consumer_group_id" envDefault:"crawler"`
 }
 
 type DatabaseConfig struct {
@@ -26,11 +27,17 @@ type DatabaseConfig struct {
 	SSLMode  string `env:"db_ssl_mode" envDefault:"disable"`
 }
 
+type Queue struct {
+	Normal   string `env:"queue_normal_cron" envDefault:"*/1 * * * *"`
+	Priority string `env:"queue_priority_cron" envDefault:"*/15 * * * *"`
+}
+
 type Config struct {
 	AppConfig           AppConfig
 	KafkaProducerConfig KafkaProducerConfig
 	KafkaConsumerConfig KafkaConsumerConfig
 	DatabaseConfig      DatabaseConfig
+	Queue               Queue
 }
 
 func LoadConfig() *Config {
