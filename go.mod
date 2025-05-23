@@ -4,6 +4,7 @@ go 1.23.4
 
 require (
 	github.com/caarlos0/env/v6 v6.10.1
+	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
 	github.com/robfig/cron/v3 v3.0.1

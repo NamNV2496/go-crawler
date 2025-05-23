@@ -32,12 +32,19 @@ type Queue struct {
 	Priority string `env:"queue_priority_cron" envDefault:"*/15 * * * *"`
 }
 
+type Telegram struct {
+	APIKey      string `env:"telegram_api_key" envDefault:""`
+	ChatId      int64  `env:"telegram_chat_id" envDefault:""`
+	ChannelName string `env:"telegram_channel_name" envDefault:""`
+}
+
 type Config struct {
 	AppConfig           AppConfig
 	KafkaProducerConfig KafkaProducerConfig
 	KafkaConsumerConfig KafkaConsumerConfig
 	DatabaseConfig      DatabaseConfig
 	Queue               Queue
+	Telegram            Telegram
 }
 
 func LoadConfig() *Config {

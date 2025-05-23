@@ -10,6 +10,7 @@ import (
 	"github.com/namnv2496/crawler/internal/entity"
 	"github.com/namnv2496/crawler/internal/service"
 	"github.com/namnv2496/crawler/internal/service/mq"
+	"github.com/segmentio/kafka-go"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
 )
@@ -34,6 +35,7 @@ func InvokeCrawlerWorker(invokers ...any) *fx.App {
 		fx.Provide(
 			fx.Annotate(mq.NewKafkaConsumer, fx.As(new(mq.IConsumer))),
 			fx.Annotate(service.NewCrawler, fx.As(new(service.ICrawlerService))),
+			fx.Annotate(service.NewTeleService, fx.As(new(service.ITeleService))),
 		),
 		fx.Supply(
 			config,
@@ -50,40 +52,42 @@ func startCrawlerWorker(
 	crawlerService service.ICrawlerService,
 ) {
 	log.Println("Start consumer")
-	for range MaxWorker {
-		startConsumer(consumer, crawlerService)
-	}
+	startConsumer(consumer, crawlerService)
+	select {}
 }
 func startConsumer(
 	consumer mq.IConsumer,
 	crawlerService service.ICrawlerService,
 ) {
-	// crawlerService.Crawl(ctx,
-	// 	`curl --location 'https://m.cafef.vn/du-lieu/Ajax/ajaxgoldprice.ashx?index=11' --header 'Accept: */*' --header 'Accept-Language: en-US,en;q=0.9,vi;q=0.8' --header 'Connection: keep-alive' --header 'Referer: https://m.cafef.vn/du-lieu/gia-vang-hom-nay/trong-nuoc.chn' --header 'Sec-Fetch-Dest: empty' --header 'Sec-Fetch-Mode: cors' --header 'Sec-Fetch-Site: same-origin' --header 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0' --header 'sec-ch-ua: "Microsoft Edge";v="135", "Not-A.Brand";v="8", "Chromium";v="135"' --header 'sec-ch-ua-mobile: ?0' --header 'sec-ch-ua-platform: "macOS"' --header 'Cookie: _ga=GA1.2.1174992577.1733489327; _ga_860L8F5EZP=GS1.1.1740282133.10.0.1740282328.0.0.0; ASP.NET_SessionId=wnors2tpgmcb0lwvqwebtsf5; favorite_stocks_state=1'`,
-	// 	"CURL")
-	for {
-		for _, consumer := range consumer.GetConsumer() {
+	for _, consumer := range consumer.GetConsumer() {
+		go func(consumer *kafka.Reader) {
 			ctx := context.Background()
-			rateLimter := time.Tick(time.Second / 10) // 10 requests per second
+			rateLimiter := time.Tick(time.Second / 10) // 10 requests per second
 			defer consumer.Close()
-			select {
-			case <-rateLimter:
-				m, err := consumer.ReadMessage(ctx)
-				if err != nil {
+			for {
+				select {
+				case <-rateLimiter:
+					var err error
+					var m kafka.Message
+					m, err = consumer.ReadMessage(ctx)
+					if err != nil {
+						return
+					}
+					var url entity.Url
+					if err := json.Unmarshal(m.Value, &url); err != nil {
+						return
+					}
+					if err := crawlerService.Crawl(ctx, url.Url, url.Method); err != nil {
+						log.Println(err)
+						return
+					}
+					log.Printf("message at topic:%v partition:%v offset:%v\t%s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
+					consumer.CommitMessages(ctx, m)
+
+				case <-ctx.Done():
 					return
 				}
-				var url entity.Url
-				if err := json.Unmarshal(m.Value, &url); err != nil {
-					return
-				}
-				if err := crawlerService.Crawl(ctx, url.Url, url.Method); err != nil {
-					log.Println(err)
-					return
-				}
-				log.Printf("message at topic:%v partition:%v offset:%v	%s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
-			case <-ctx.Done():
-				return
 			}
-		}
+		}(consumer)
 	}
 }

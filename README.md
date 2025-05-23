@@ -14,3 +14,39 @@ A simple web crawler written in Go that crawls websites and extracts information
 ```bash
 go get github.com/namnv/crawler
 ```
+
+# Architecture
+![architecture](docs/design.png)
+
+
+# How to run
+
+```bash
+# Start docker
+docker-compose up -d
+```
+```bash
+# Terminal 1
+go run main.go server
+
+# Terminal 2
+go run main.go crawler-worker
+```
+
+
+<details>
+
+# 1. Create new bot
+![alt text](docs/create_bot.png)
+![alt text](docs/create_group_chat.png)
+
+
+# 2. Run command to get chat Id
+
+```bash
+curl -s https://api.telegram.org/bot${TOKEN}/getUpdates
+```
+
+![alt text](docs/tele_message.png)
+
+</details>

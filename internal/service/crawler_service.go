@@ -19,18 +19,22 @@ type ICrawlerService interface {
 }
 
 type Crawler struct {
-	maxDepth int
-	visited  map[string]bool
-	mutex    sync.Mutex
-	results  map[string]string // URL -> Title
+	maxDepth    int
+	visited     map[string]bool
+	mutex       sync.Mutex
+	results     map[string]string
+	teleService ITeleService
 }
 
 // NewCrawler creates a new crawler instance
-func NewCrawler() *Crawler {
+func NewCrawler(
+	teleService ITeleService,
+) *Crawler {
 	return &Crawler{
-		maxDepth: 3,
-		visited:  make(map[string]bool),
-		results:  make(map[string]string),
+		maxDepth:    3,
+		visited:     make(map[string]bool),
+		results:     make(map[string]string),
+		teleService: teleService,
 	}
 }
 
@@ -141,6 +145,9 @@ func (c *Crawler) crawlCurl(pageURL string) (io.ReadCloser, error) {
 	c.mutex.Lock()
 	log.Printf("output: %v\n", string(output))
 	log.Println("=======================================")
+	if err := c.teleService.SendMessage(ExtractGoldPrice(output), "text"); err != nil {
+		log.Printf("send price error: %s", err.Error())
+	}
 	c.results["test"] = string(output)
 	c.mutex.Unlock()
 	return io.NopCloser(bytes.NewReader(output)), nil
