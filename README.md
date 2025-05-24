@@ -4,8 +4,10 @@ A simple web crawler written in Go that crawls websites and extracts information
 
 ## Features
 
-- Crawls web pages starting from a given URL
-- Configurable crawl depth
+- Crawls web pages starting from a given URL with method GET, POST and CURL
+- Manage multiple queue with priority for crawlers
+- Run by cron job
+- Send message to Telegram
 - Extracts page titles
 - Follows links to discover more pages
 
@@ -16,7 +18,8 @@ go get github.com/namnv/crawler
 ```
 
 # Architecture
-![architecture](docs/design.png)
+
+![alt text](docs/design.png)
 
 
 # How to run
@@ -33,13 +36,12 @@ go run main.go server
 go run main.go crawler-worker
 ```
 
-
 <details>
 
-# 1. Create new bot
+# 1. Create new bot and get token
+
 ![alt text](docs/create_bot.png)
 ![alt text](docs/create_group_chat.png)
-
 
 # 2. Run command to get chat Id
 
