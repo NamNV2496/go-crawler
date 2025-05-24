@@ -11,11 +11,14 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/namnv2496/crawler/internal/domain"
+	"github.com/namnv2496/crawler/internal/entity"
+	"github.com/namnv2496/crawler/internal/repository"
 	"golang.org/x/net/html"
 )
 
 type ICrawlerService interface {
-	Crawl(ctx context.Context, startURL, method string) error
+	Crawl(ctx context.Context, url entity.Url) error
 }
 
 type Crawler struct {
@@ -24,95 +27,113 @@ type Crawler struct {
 	mutex       sync.Mutex
 	results     map[string]string
 	teleService ITeleService
+	resultRepo  repository.IResultRepository
 }
 
 // NewCrawler creates a new crawler instance
-func NewCrawler(
+func NewCrawlerService(
 	teleService ITeleService,
+	resultRepo repository.IResultRepository,
 ) *Crawler {
 	return &Crawler{
 		maxDepth:    3,
 		visited:     make(map[string]bool),
 		results:     make(map[string]string),
 		teleService: teleService,
+		resultRepo:  resultRepo,
 	}
 }
 
 // Crawl starts crawling from the given URL up to the maximum depth
-func (c *Crawler) Crawl(ctx context.Context, startURL, method string) error {
-	err := c.crawlPage(startURL, method, 0)
+func (c *Crawler) Crawl(ctx context.Context, url entity.Url) error {
+	err := c.crawlPage(ctx, url, 0)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *Crawler) crawlPage(pageURL, method string, depth int) error {
+func (c *Crawler) crawlPage(ctx context.Context, url entity.Url, depth int) error {
 	if depth > c.maxDepth {
 		return nil
 	}
 	c.mutex.Lock()
-	if c.visited[pageURL] {
+	if c.visited[url.Url] {
 		c.mutex.Unlock()
 		return nil
 	}
-	c.visited[pageURL] = true
+	c.visited[url.Url] = true
 	c.mutex.Unlock()
-	switch method {
+	var resp string
+	var err error
+	switch url.Method {
 	case "GET":
-		c.crawlGET(pageURL)
-
+		resp, err = c.crawlGET(url.Url)
 	case "POST":
-		c.crawlPOST(pageURL)
+		resp, err = c.crawlPOST(url.Url)
 	case "CURL":
-		c.crawlCurl(pageURL)
+		resp, err = c.crawlCurl(url.Url)
 	default:
-		return fmt.Errorf("unsupported HTTP method: %s", method)
+		return fmt.Errorf("unsupported HTTP method: %s", url.Method)
+	}
+	if err != nil {
+		log.Printf("crawl page error: %s", err.Error())
+		return err
+	}
+	// write result to db
+	if err := c.resultRepo.CreateResult(ctx, &domain.Result{
+		Url:    url.Url,
+		Method: url.Method,
+		Queue:  url.Queue,
+		Domain: url.Domain,
+		Result: resp,
+	}); err != nil {
+		log.Printf("create result error: %s", err.Error())
 	}
 	return nil
 }
 
-func (c *Crawler) crawlGET(pageURL string) error {
+func (c *Crawler) crawlGET(pageURL string) (string, error) {
 	resp, err := http.Get(pageURL)
 	if err != nil {
-		return fmt.Errorf("error fetching %s: %v", pageURL, err)
+		return "", fmt.Errorf("error fetching %s: %v", pageURL, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("non-200 status code: %d for %s", resp.StatusCode, pageURL)
+		return "", fmt.Errorf("non-200 status code: %d for %s", resp.StatusCode, pageURL)
 	}
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
-		return fmt.Errorf("error parsing HTML: %v", err)
+		return "", fmt.Errorf("error parsing HTML: %v", err)
 	}
 	title := extractTitle(doc)
 	c.mutex.Lock()
-	c.results[title] = title
+	c.results[title] = doc.Data
 	c.mutex.Unlock()
-	return nil
+	return doc.Data, nil
 }
 
-func (c *Crawler) crawlPOST(pageURL string) error {
+func (c *Crawler) crawlPOST(pageURL string) (string, error) {
 	resp, err := http.Post(pageURL, "application/x-www-form-urlencoded", nil)
 	if err != nil {
-		return fmt.Errorf("error posting %s: %v", pageURL, err)
+		return "", fmt.Errorf("error posting %s: %v", pageURL, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("non-200 status code: %d for %s", resp.StatusCode, pageURL)
+		return "", fmt.Errorf("non-200 status code: %d for %s", resp.StatusCode, pageURL)
 	}
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
-		return fmt.Errorf("error parsing HTML: %v", err)
+		return "", fmt.Errorf("error parsing HTML: %v", err)
 	}
 	title := extractTitle(doc)
 	c.mutex.Lock()
-	c.results[title] = title
+	c.results[title] = doc.Data
 	c.mutex.Unlock()
-	return nil
+	return doc.Data, nil
 }
 
-func (c *Crawler) crawlCurl(pageURL string) (io.ReadCloser, error) {
+func (c *Crawler) crawlCurl(pageURL string) (string, error) {
 	// Parse the curl command string
 	parts := strings.Split(pageURL, "--")
 	var args []string
@@ -140,17 +161,19 @@ func (c *Crawler) crawlCurl(pageURL string) (io.ReadCloser, error) {
 	cmd := exec.Command("curl", args...)
 	output, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("error executing curl command: %v", err)
+		return "", fmt.Errorf("error executing curl command: %v", err)
 	}
 	c.mutex.Lock()
-	log.Printf("output: %v\n", string(output))
-	log.Println("=======================================")
 	if err := c.teleService.SendMessage(ExtractGoldPrice(output), "text"); err != nil {
 		log.Printf("send price error: %s", err.Error())
 	}
+	log.Printf("send message to Telegram: %v\n", string(output))
+	log.Println("=======================================")
 	c.results["test"] = string(output)
 	c.mutex.Unlock()
-	return io.NopCloser(bytes.NewReader(output)), nil
+	resp := string(output)
+	io.NopCloser(bytes.NewReader(output))
+	return resp, nil
 }
 
 func extractTitle(n *html.Node) string {

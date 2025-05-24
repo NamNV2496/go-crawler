@@ -8,6 +8,7 @@ import (
 
 	"github.com/namnv2496/crawler/internal/configs"
 	"github.com/namnv2496/crawler/internal/entity"
+	"github.com/namnv2496/crawler/internal/repository"
 	"github.com/namnv2496/crawler/internal/service"
 	"github.com/namnv2496/crawler/internal/service/mq"
 	"github.com/segmentio/kafka-go"
@@ -34,8 +35,10 @@ func InvokeCrawlerWorker(invokers ...any) *fx.App {
 		fx.StopTimeout(time.Second*10),
 		fx.Provide(
 			fx.Annotate(mq.NewKafkaConsumer, fx.As(new(mq.IConsumer))),
-			fx.Annotate(service.NewCrawler, fx.As(new(service.ICrawlerService))),
+			fx.Annotate(service.NewCrawlerService, fx.As(new(service.ICrawlerService))),
 			fx.Annotate(service.NewTeleService, fx.As(new(service.ITeleService))),
+			fx.Annotate(repository.NewDatabase, fx.As(new(repository.IRepository))),
+			fx.Annotate(repository.NewResultRepository, fx.As(new(repository.IResultRepository))),
 		),
 		fx.Supply(
 			config,
@@ -70,6 +73,7 @@ func startConsumer(
 					var err error
 					var m kafka.Message
 					m, err = consumer.ReadMessage(ctx)
+					defer consumer.CommitMessages(ctx, m)
 					if err != nil {
 						return
 					}
@@ -77,12 +81,11 @@ func startConsumer(
 					if err := json.Unmarshal(m.Value, &url); err != nil {
 						return
 					}
-					if err := crawlerService.Crawl(ctx, url.Url, url.Method); err != nil {
+					if err := crawlerService.Crawl(ctx, url); err != nil {
 						log.Println(err)
 						return
 					}
 					log.Printf("message at topic:%v partition:%v offset:%v\t%s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
-					consumer.CommitMessages(ctx, m)
 
 				case <-ctx.Done():
 					return

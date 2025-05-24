@@ -48,6 +48,10 @@ func (s *TeleService) SendNotify(telephone string) bool {
 }
 
 func (s *TeleService) SendMessage(message string, format string) error {
+	if len(message) == 0 {
+		fmt.Println("Message is empty => Not sending message")
+		return nil
+	}
 	var msg tgbotapi.MessageConfig
 	if s.ChatId != 0 {
 		msg = tgbotapi.NewMessage(s.ChatId, message)

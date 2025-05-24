@@ -1,14 +1,40 @@
+CREATE TABLE IF NOT EXISTS queues (
+    id SERIAL PRIMARY KEY,
+    queue VARCHAR(255) NOT NULL,
+    domain VARCHAR(255) NOT NULL,
+    cron VARCHAR(255),
+    quantity INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL
+);
+
+
 create table if not exists urls (
-    id int primary key,
-    url varchar(255),
+    id SERIAL PRIMARY KEY,
+    url text,
+    method varchar(10),
     description varchar(255),
     queue varchar(255),
     domain varchar(255),
     is_active boolean,
     created_at timestamp default current_timestamp,
-    updated_at timestamp default current_timestamp          
-)
+    updated_at timestamp default current_timestamp,
+    deleted_at timestamp         
+);
 
+create table if not exists result (
+    id SERIAL PRIMARY KEY,
+    url text,
+    method varchar(10),
+    queue varchar(255),
+    domain varchar(255),
+    result text,
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp,
+    deleted_at timestamp
+);
 
 INSERT INTO public.queues (created_at,updated_at,deleted_at,queue,"domain",cron,quantity,is_active) VALUES
 	 ('2025-05-22 02:02:34.684014+07','2025-05-22 02:02:34.684014+07',NULL,'normal','gold','5m',10,true),
