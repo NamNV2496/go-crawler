@@ -14,7 +14,7 @@ A simple web crawler written in Go that crawls websites and extracts information
 ## Installation
 
 ```bash
-go get github.com/namnv/crawler
+git clone https://github.com/NamNV2496/crawler.git
 ```
 
 # Architecture
@@ -28,12 +28,20 @@ go get github.com/namnv/crawler
 # Start docker
 docker-compose up -d
 ```
+
 ```bash
+cd crawler-service
+
 # Terminal 1
 go run main.go server
 
+make service
+
+
 # Terminal 2
 go run main.go crawler-worker
+
+make worker
 ```
 
 <details>
