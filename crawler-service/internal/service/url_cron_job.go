@@ -19,11 +19,11 @@ const (
 	MaxWorker = 10
 )
 
-type IUrlWorker interface {
+type IUrlCronJob interface {
 	Start() error
 }
 
-type UrlWorker struct {
+type UrlCronJob struct {
 	conf      *configs.Config
 	domains   []string
 	urlRepo   repository.IUrlRepository
@@ -31,13 +31,13 @@ type UrlWorker struct {
 	producers mq.IProducer
 }
 
-func NewUrlWorker(
+func NewUrlCronJob(
 	conf *configs.Config,
 	urlRepo repository.IUrlRepository,
 	queueRepo repository.IQueueRepository,
 	producers mq.IProducer,
-) *UrlWorker {
-	return &UrlWorker{
+) *UrlCronJob {
+	return &UrlCronJob{
 		conf:      conf,
 		domains:   conf.AppConfig.Domains,
 		urlRepo:   urlRepo,
@@ -46,19 +46,19 @@ func NewUrlWorker(
 	}
 }
 
-var _ IUrlWorker = &UrlWorker{}
+var _ IUrlCronJob = &UrlCronJob{}
 
-func (w *UrlWorker) Start() error {
+func (w *UrlCronJob) Start() error {
 	cronJob := cron.New()
 	ctx := context.Background()
 	_, err := cronJob.AddFunc(w.conf.Queue.Normal, func() {
-		w.startWorker(ctx, "normal")
+		w.startJobWithQueue(ctx, "normal")
 	})
 	if err != nil {
 		return err
 	}
 	_, err = cronJob.AddFunc(w.conf.Queue.Priority, func() {
-		w.startWorker(ctx, "priority")
+		w.startJobWithQueue(ctx, "priority")
 	})
 	if err != nil {
 		return err
@@ -67,8 +67,8 @@ func (w *UrlWorker) Start() error {
 	return nil
 }
 
-func (w *UrlWorker) startWorker(ctx context.Context, queue string) {
-	log.Println("start worker: ", queue)
+func (w *UrlCronJob) startJobWithQueue(ctx context.Context, queue string) {
+	log.Println("start job with queue: ", queue)
 	numberOfQueues, err := w.queueRepo.CountQueueByDomainsAndQueue(ctx, w.domains, queue)
 	if err != nil {
 		return
@@ -82,7 +82,7 @@ func (w *UrlWorker) startWorker(ctx context.Context, queue string) {
 	}
 }
 
-func (w *UrlWorker) publishToCrawler(ctx context.Context, queues []*domain.Queue) {
+func (w *UrlCronJob) publishToCrawler(ctx context.Context, queues []*domain.Queue) {
 	domains := make([]string, len(queues))
 	queueUrls := make([]string, len(queues))
 	for i, queue := range queues {

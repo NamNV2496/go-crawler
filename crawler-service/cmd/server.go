@@ -45,7 +45,7 @@ func InvokeServer(invokers ...any) *fx.App {
 			fx.Annotate(repository.NewQueueRepository, fx.As(new(repository.IQueueRepository))),
 			// MQ
 			fx.Annotate(mq.NewKafkaProducer, fx.As(new(mq.IProducer))),
-			fx.Annotate(service.NewUrlWorker, fx.As(new(service.IUrlWorker))),
+			fx.Annotate(service.NewUrlCronJob, fx.As(new(service.IUrlCronJob))),
 		),
 		fx.Supply(
 			config,
@@ -60,7 +60,7 @@ func startServer(
 	config *configs.Config,
 	urlController crawlerv1.UrlServiceServer,
 	queueController crawlerv1.QueueServiceServer,
-	urlWorker service.IUrlWorker,
+	urlCronJob service.IUrlCronJob,
 ) error {
 	listener, err := net.Listen("tcp", config.AppConfig.GRPCPort)
 	if err != nil {
@@ -95,8 +95,8 @@ func startServer(
 		return fmt.Errorf("failed to register handler: %v", err)
 	}
 	fmt.Printf("http server is running on %s\n", config.AppConfig.HTTPPort)
-	// start worker
-	if err := urlWorker.Start(); err != nil {
+	// start cron job
+	if err := urlCronJob.Start(); err != nil {
 		fmt.Println("failed to start publisher: %w", err)
 	}
 

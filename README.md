@@ -22,6 +22,29 @@ git clone https://github.com/NamNV2496/crawler.git
 ![alt text](docs/design.png)
 
 
+<details>
+title Crawler
+
+participant cron-job
+participant crawler-service
+participant url-DB
+participant Kafka
+participant crawler-worker
+participant result-DB
+
+cron-job -> cron-job: run every 5m
+cron-job->crawler-service: trigger to get job
+crawler-service->url-DB: GetUrlByDomainsAndQueues
+crawler-service<--url-DB: get urls
+crawler-service->Kafka: public message to queue by topic
+Kafka<-crawler-worker: consume message
+crawler-worker->crawler-worker: crawl by url
+crawler-worker->result-DB: write data to result DB
+
+</details>
+
+![alt text](docs/sequence.png)
+
 # How to run
 
 ```bash
