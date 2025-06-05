@@ -28,12 +28,14 @@ type Crawler struct {
 	results     map[string]string
 	teleService ITeleService
 	resultRepo  repository.IResultRepository
+	workerPool  IWorkerPool
 }
 
 // NewCrawler creates a new crawler instance
 func NewCrawlerService(
 	teleService ITeleService,
 	resultRepo repository.IResultRepository,
+	workerPool IWorkerPool,
 ) *Crawler {
 	return &Crawler{
 		maxDepth:    3,
@@ -41,12 +43,13 @@ func NewCrawlerService(
 		results:     make(map[string]string),
 		teleService: teleService,
 		resultRepo:  resultRepo,
+		workerPool:  workerPool,
 	}
 }
 
 // Crawl starts crawling from the given URL up to the maximum depth
 func (c *Crawler) Crawl(ctx context.Context, url entity.Url) error {
-	err := c.crawlPage(ctx, url, 0)
+	err := c.crawlPage(ctx, url, c.maxDepth)
 	if err != nil {
 		return err
 	}
@@ -64,43 +67,28 @@ func (c *Crawler) crawlPage(ctx context.Context, url entity.Url, depth int) erro
 	}
 	c.visited[url.Url] = true
 	c.mutex.Unlock()
-	var resp string
-	var err error
 	switch url.Method {
 	case "GET":
-		resp, err = c.crawlGET(url.Url)
+		c.crawlGET(ctx, url, depth)
 	case "POST":
-		resp, err = c.crawlPOST(url.Url)
+		c.crawlPOST(ctx, url, depth)
 	case "CURL":
-		resp, err = c.crawlCurl(url.Url)
+		c.crawlCurl(ctx, url, depth)
 	default:
 		return fmt.Errorf("unsupported HTTP method: %s", url.Method)
 	}
-	if err != nil {
-		log.Printf("crawl page error: %s", err.Error())
-		return err
-	}
-	// write result to db
-	if err := c.resultRepo.CreateResult(ctx, &domain.Result{
-		Url:    url.Url,
-		Method: url.Method,
-		Queue:  url.Queue,
-		Domain: url.Domain,
-		Result: resp,
-	}); err != nil {
-		log.Printf("create result error: %s", err.Error())
-	}
+
 	return nil
 }
 
-func (c *Crawler) crawlGET(pageURL string) (string, error) {
-	resp, err := http.Get(pageURL)
+func (c *Crawler) crawlGET(ctx context.Context, url entity.Url, depth int) (string, error) {
+	resp, err := http.Get(url.Url)
 	if err != nil {
-		return "", fmt.Errorf("error fetching %s: %v", pageURL, err)
+		return "", fmt.Errorf("error fetching %s: %v", url.Url, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("non-200 status code: %d for %s", resp.StatusCode, pageURL)
+		return "", fmt.Errorf("non-200 status code: %d for %s", resp.StatusCode, url.Url)
 	}
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
@@ -113,14 +101,14 @@ func (c *Crawler) crawlGET(pageURL string) (string, error) {
 	return doc.Data, nil
 }
 
-func (c *Crawler) crawlPOST(pageURL string) (string, error) {
-	resp, err := http.Post(pageURL, "application/x-www-form-urlencoded", nil)
+func (c *Crawler) crawlPOST(ctx context.Context, url entity.Url, depth int) (string, error) {
+	resp, err := http.Post(url.Url, "application/x-www-form-urlencoded", nil)
 	if err != nil {
-		return "", fmt.Errorf("error posting %s: %v", pageURL, err)
+		return "", fmt.Errorf("error posting %s: %v", url.Url, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("non-200 status code: %d for %s", resp.StatusCode, pageURL)
+		return "", fmt.Errorf("non-200 status code: %d for %s", resp.StatusCode, url.Url)
 	}
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
@@ -133,9 +121,9 @@ func (c *Crawler) crawlPOST(pageURL string) (string, error) {
 	return doc.Data, nil
 }
 
-func (c *Crawler) crawlCurl(pageURL string) (string, error) {
+func (c *Crawler) crawlCurl(ctx context.Context, url entity.Url, depth int) (string, error) {
 	// Parse the curl command string
-	parts := strings.Split(pageURL, "--")
+	parts := strings.Split(url.Url, "--")
 	var args []string
 
 	// Skip the first part as it's the 'curl' command itself
@@ -159,18 +147,42 @@ func (c *Crawler) crawlCurl(pageURL string) (string, error) {
 
 	// Create and execute command
 	cmd := exec.Command("curl", args...)
-	output, err := cmd.Output()
+	var output []byte
+	var err error
+	c.workerPool.Crawl(
+		func() (any, error) {
+			var cmdOutput []byte
+			cmdOutput, err = cmd.Output()
+			output = cmdOutput // Assign to outer variable
+			return cmdOutput, err
+		},
+		depth,
+		nil,
+		func(result any, cmdErr error) {
+			if cmdErr != nil {
+				err = cmdErr // Propagate error to outer scope
+				return
+			}
+			if err = c.teleService.SendMessage(ExtractGoldPrice(output), "text"); err != nil {
+				log.Printf("send price error: %s", err.Error())
+			}
+			// write result to db
+			if err = c.resultRepo.CreateResult(ctx, &domain.Result{
+				Url:    url.Url,
+				Method: url.Method,
+				Queue:  url.Queue,
+				Domain: url.Domain,
+				Result: string(output),
+			}); err != nil {
+				log.Printf("create result error: %s", err.Error())
+			}
+			log.Printf("send message to Telegram: %v\n", string(output))
+			log.Println("=======================================")
+			c.results["test"] = string(output)
+		})
 	if err != nil {
 		return "", fmt.Errorf("error executing curl command: %v", err)
 	}
-	c.mutex.Lock()
-	if err := c.teleService.SendMessage(ExtractGoldPrice(output), "text"); err != nil {
-		log.Printf("send price error: %s", err.Error())
-	}
-	log.Printf("send message to Telegram: %v\n", string(output))
-	log.Println("=======================================")
-	c.results["test"] = string(output)
-	c.mutex.Unlock()
 	resp := string(output)
 	io.NopCloser(bytes.NewReader(output))
 	return resp, nil

@@ -32,7 +32,8 @@ participant Kafka
 participant crawler-worker
 participant result-DB
 
-cron-job -> cron-job: run every 5m
+cron-job -> cron-job: normal queue run every 5m
+cron-job -> cron-job: priority queue run every 15m
 cron-job->crawler-service: trigger to get job
 crawler-service->url-DB: GetUrlByDomainsAndQueues
 crawler-service<--url-DB: get urls

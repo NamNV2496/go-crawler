@@ -16,22 +16,27 @@ type ITeleService interface {
 }
 
 type TeleService struct {
-	ChatId      int64
-	ChannelName string
+	enable      bool
+	chatId      int64
+	channelName string
 	bot         *tgbotapi.BotAPI
 }
 
 func NewTeleService(
 	conf *configs.Config,
 ) *TeleService {
+	if !conf.Telegram.Enable {
+		return &TeleService{}
+	}
 	bot, err := tgbotapi.NewBotAPI(conf.Telegram.APIKey)
 	if err != nil {
 		panic(err)
 	}
 
 	return &TeleService{
-		ChatId:      conf.Telegram.ChatId,
-		ChannelName: conf.Telegram.ChannelName,
+		enable:      conf.Telegram.Enable,
+		chatId:      conf.Telegram.ChatId,
+		channelName: conf.Telegram.ChannelName,
 		bot:         bot,
 	}
 }
@@ -48,15 +53,18 @@ func (s *TeleService) SendNotify(telephone string) bool {
 }
 
 func (s *TeleService) SendMessage(message string, format string) error {
+	if !s.enable {
+		return nil
+	}
 	if len(message) == 0 {
 		fmt.Println("Message is empty => Not sending message")
 		return nil
 	}
 	var msg tgbotapi.MessageConfig
-	if s.ChatId != 0 {
-		msg = tgbotapi.NewMessage(s.ChatId, message)
-	} else if len(s.ChannelName) != 0 {
-		msg = tgbotapi.NewMessageToChannel(s.ChannelName, message)
+	if s.chatId != 0 {
+		msg = tgbotapi.NewMessage(s.chatId, message)
+	} else if len(s.channelName) != 0 {
+		msg = tgbotapi.NewMessageToChannel(s.channelName, message)
 	} else {
 		os.Exit(1)
 	}
@@ -73,12 +81,15 @@ func (s *TeleService) SendMessage(message string, format string) error {
 }
 
 func (s *TeleService) SendLocation(latitude float64, longitude float64) error {
+	if !s.enable {
+		return nil
+	}
 	if longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90 {
 		fmt.Printf("Longitude or latitude value invalid: %v, %v\n", latitude, longitude)
 		os.Exit(1)
 	}
 
-	msg := tgbotapi.NewLocation(s.ChatId, latitude, longitude)
+	msg := tgbotapi.NewLocation(s.chatId, latitude, longitude)
 	_, err := s.bot.Send(msg)
 	if err != nil {
 		return err
@@ -87,21 +98,24 @@ func (s *TeleService) SendLocation(latitude float64, longitude float64) error {
 }
 
 func (s *TeleService) SendFile(filename string, filetype string, caption string) error {
+	if !s.enable {
+		return nil
+	}
 	file := fileReader(filename, filetype, caption)
 	var msg tgbotapi.Chattable
 	switch filetype {
 	case "photo":
-		msg = tgbotapi.NewPhoto(s.ChatId, file)
+		msg = tgbotapi.NewPhoto(s.chatId, file)
 	case "video":
-		msg = tgbotapi.NewVideo(s.ChatId, file)
+		msg = tgbotapi.NewVideo(s.chatId, file)
 	case "audio":
-		msg = tgbotapi.NewAudio(s.ChatId, file)
+		msg = tgbotapi.NewAudio(s.chatId, file)
 	case "sticker":
-		msg = tgbotapi.NewSticker(s.ChatId, file)
+		msg = tgbotapi.NewSticker(s.chatId, file)
 	case "animation":
-		msg = tgbotapi.NewAnimation(s.ChatId, file)
+		msg = tgbotapi.NewAnimation(s.chatId, file)
 	default:
-		msg = tgbotapi.NewDocument(s.ChatId, file)
+		msg = tgbotapi.NewDocument(s.chatId, file)
 	}
 
 	_, err := s.bot.Send(msg)

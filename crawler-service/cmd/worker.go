@@ -35,6 +35,7 @@ func InvokeCrawlerWorker(invokers ...any) *fx.App {
 			fx.Annotate(service.NewTeleService, fx.As(new(service.ITeleService))),
 			fx.Annotate(repository.NewDatabase, fx.As(new(repository.IRepository))),
 			fx.Annotate(repository.NewResultRepository, fx.As(new(repository.IResultRepository))),
+			fx.Annotate(service.NewWorkerPool, fx.As(new(service.IWorkerPool))),
 		),
 		fx.Supply(
 			config,

@@ -6,6 +6,7 @@ type AppConfig struct {
 	GRPCPort string   `env:"grpc_port" envDefault:":9090"`
 	HTTPPort string   `env:"http_port" envDefault:"8080"`
 	Domains  []string `env:"domains" envDefault:"gold,diamond"`
+	Workers  int      `env:"workers" envDefault:"100"`
 }
 type KafkaProducerConfig struct {
 	Brokers string   `env:"producer_broker" envDefault:"localhost:29092"`
@@ -15,7 +16,7 @@ type KafkaProducerConfig struct {
 type KafkaConsumerConfig struct {
 	Brokers []string `env:"consumer_broker" envDefault:"localhost:29092"`
 	Topic   []string `env:"consumer_topic" envDefault:"normal,priority"`
-	GroupID string   `env:"consumer_group_id" envDefault:"crawler"`
+	GroupID string   `env:"consumer_group_id" envDefault:"crawler-local"`
 }
 
 type DatabaseConfig struct {
@@ -33,6 +34,7 @@ type Queue struct {
 }
 
 type Telegram struct {
+	Enable      bool   `env:"telegram_enable" envDefault:"false"`
 	APIKey      string `env:"telegram_api_key" envDefault:""`
 	ChatId      int64  `env:"telegram_chat_id" envDefault:""`
 	ChannelName string `env:"telegram_channel_name" envDefault:""`
