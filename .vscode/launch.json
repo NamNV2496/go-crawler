@@ -11,8 +11,8 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/crawler-service/main.go",
-            "args": ["crawler-worker"]
-            // "args": ["server"]
+            // "args": ["crawler-worker"]
+            "args": ["server"]
         }
     ]
 }

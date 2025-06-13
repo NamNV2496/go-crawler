@@ -48,6 +48,8 @@ crawler-worker->result-DB: write data to result DB
 
 # How to run
 
+Setup your environment variables in `.env.example` and change it to `.env`
+
 ```bash
 # Start docker
 docker-compose up -d

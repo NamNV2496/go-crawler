@@ -4,29 +4,25 @@ import (
 	"context"
 
 	"github.com/namnv2496/crawler/internal/domain"
-	"gorm.io/gorm"
 )
 
 type IResultRepository interface {
+	IRepository[domain.Result]
 	CreateResult(ctx context.Context, url *domain.Result) error
 }
 
 type ResultRepository struct {
-	db *gorm.DB
+	baseRepository[domain.Result]
 }
 
 func NewResultRepository(
-	dbSource IRepository,
+	dbSource IDatabase,
 ) *ResultRepository {
 	return &ResultRepository{
-		db: dbSource.GetDB(),
+		baseRepository: newBaseRepository[domain.Result](dbSource.GetDB()),
 	}
 }
 
-func (r *ResultRepository) CreateResult(ctx context.Context, result *domain.Result) error {
-	err := r.db.WithContext(ctx).Model(&domain.Result{}).Create(result).Error
-	if err != nil {
-		return err
-	}
-	return nil
+func (_self *ResultRepository) CreateResult(ctx context.Context, result *domain.Result) error {
+	return _self.InsertOnce(ctx, result)
 }

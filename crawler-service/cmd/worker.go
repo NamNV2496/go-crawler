@@ -33,7 +33,7 @@ func InvokeCrawlerWorker(invokers ...any) *fx.App {
 			fx.Annotate(mq.NewKafkaConsumer, fx.As(new(mq.IConsumer))),
 			fx.Annotate(service.NewCrawlerService, fx.As(new(service.ICrawlerService))),
 			fx.Annotate(service.NewTeleService, fx.As(new(service.ITeleService))),
-			fx.Annotate(repository.NewDatabase, fx.As(new(repository.IRepository))),
+			fx.Annotate(repository.NewDatabase, fx.As(new(repository.IDatabase))),
 			fx.Annotate(repository.NewResultRepository, fx.As(new(repository.IResultRepository))),
 			fx.Annotate(service.NewWorkerPool, fx.As(new(service.IWorkerPool))),
 		),

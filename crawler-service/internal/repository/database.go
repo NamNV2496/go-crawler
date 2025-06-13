@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-type IRepository interface {
+type IDatabase interface {
 	GetDB() *gorm.DB
 	Close() error
 }

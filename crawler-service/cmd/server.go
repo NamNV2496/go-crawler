@@ -3,7 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
+	"net/http"
 	"time"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/validator"
@@ -24,7 +26,10 @@ var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start the server",
 	Run: func(cmd *cobra.Command, args []string) {
-		InvokeServer(startServer)
+		InvokeServer(
+			startServer,
+			startCronjob,
+		)
 	},
 }
 
@@ -34,7 +39,7 @@ func InvokeServer(invokers ...any) *fx.App {
 		fx.StartTimeout(time.Second*10),
 		fx.StopTimeout(time.Second*10),
 		fx.Provide(
-			fx.Annotate(repository.NewDatabase, fx.As(new(repository.IRepository))),
+			fx.Annotate(repository.NewDatabase, fx.As(new(repository.IDatabase))),
 			// url
 			fx.Annotate(repository.NewUrlRepository, fx.As(new(repository.IUrlRepository))),
 			fx.Annotate(service.NewUrlService, fx.As(new(service.IUrlService))),
@@ -62,6 +67,7 @@ func startServer(
 	queueController crawlerv1.QueueServiceServer,
 	urlCronJob service.IUrlCronJob,
 ) error {
+	// start grpc
 	listener, err := net.Listen("tcp", config.AppConfig.GRPCPort)
 	if err != nil {
 		return err
@@ -79,26 +85,34 @@ func startServer(
 	reflection.Register(server)
 	crawlerv1.RegisterUrlServiceServer(server, urlController)
 	crawlerv1.RegisterQueueServiceServer(server, queueController)
-
 	fmt.Printf("gRPC server is running on %s\n", config.AppConfig.GRPCPort)
+	// start http
 	conn, err := grpc.DialContext(context.Background(), config.AppConfig.GRPCPort, grpc.WithInsecure())
 	if err != nil {
 		return fmt.Errorf("failed to dial gRPC server: %v", err)
 	}
 	defer conn.Close()
-
 	mux := runtime.NewServeMux()
-	if err := crawlerv1.RegisterUrlServiceHandlerFromEndpoint(context.Background(), mux, config.AppConfig.GRPCPort, []grpc.DialOption{grpc.WithInsecure()}); err != nil {
+	if err := crawlerv1.RegisterUrlServiceHandler(context.Background(), mux, conn); err != nil {
 		return fmt.Errorf("failed to register handler: %v", err)
 	}
-	if err := crawlerv1.RegisterQueueServiceHandlerFromEndpoint(context.Background(), mux, config.AppConfig.GRPCPort, []grpc.DialOption{grpc.WithInsecure()}); err != nil {
+	if err := crawlerv1.RegisterQueueServiceHandler(context.Background(), mux, conn); err != nil {
 		return fmt.Errorf("failed to register handler: %v", err)
 	}
-	fmt.Printf("http server is running on %s\n", config.AppConfig.HTTPPort)
-	// start cron job
-	if err := urlCronJob.Start(); err != nil {
-		fmt.Println("failed to start publisher: %w", err)
-	}
-
+	go func() {
+		fmt.Printf("HTTP server is running on %s\n", config.AppConfig.HTTPPort)
+		if err := http.ListenAndServe(config.AppConfig.HTTPPort, mux); err != nil {
+			log.Fatalf("failed to start HTTP server: %v", err)
+		}
+	}()
 	return server.Serve(listener)
+}
+
+func startCronjob() error {
+	// start cron job
+	// if err := urlCronJob.Start(); err != nil {
+	// 	panic("failed to start publisher")
+	// }
+	fmt.Printf("Cron job is started")
+	return nil
 }

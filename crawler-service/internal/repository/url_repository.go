@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/namnv2496/crawler/internal/domain"
-	"gorm.io/gorm"
 )
 
 type IUrlRepository interface {
+	IRepository[domain.Url]
 	CreateUrl(ctx context.Context, url *domain.Url) (int64, error)
 	GetUrls(ctx context.Context, limit, offset int32) ([]*domain.Url, error)
 	UpdateUrl(ctx context.Context, url *domain.Url) error
@@ -17,69 +17,55 @@ type IUrlRepository interface {
 }
 
 type UrlRepository struct {
-	db *gorm.DB
+	baseRepository[domain.Url]
 }
 
 func NewUrlRepository(
-	dbSource IRepository,
+	dbSource IDatabase,
 ) *UrlRepository {
 	return &UrlRepository{
-		db: dbSource.GetDB(),
+		baseRepository: newBaseRepository[domain.Url](dbSource.GetDB()),
 	}
 }
 
-func (r *UrlRepository) CreateUrl(ctx context.Context, url *domain.Url) (int64, error) {
-	result := r.db.WithContext(ctx).Create(url)
-	if result.Error != nil {
-		return 0, result.Error
-	}
-	return url.Id, nil
+func (_self *UrlRepository) CreateUrl(ctx context.Context, url *domain.Url) (int64, error) {
+	err := _self.InsertOnce(ctx, url)
+	return url.Id, err
 }
 
-func (r *UrlRepository) GetUrls(ctx context.Context, limit, offset int32) ([]*domain.Url, error) {
-	var urls []*domain.Url
-	result := r.db.WithContext(ctx).Limit(int(limit)).Offset(int(offset)).Find(&urls)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return urls, nil
+func (_self *UrlRepository) GetUrls(ctx context.Context, limit, offset int32) ([]*domain.Url, error) {
+	var opts []QueryOptionFunc
+	opts = append(opts, WithLimit((int(limit))))
+	opts = append(opts, WithOffset((int(offset))))
+
+	return _self.Finds(ctx, opts...)
 }
 
-func (r *UrlRepository) UpdateUrl(ctx context.Context, url *domain.Url) error {
-	result := r.db.WithContext(ctx).Save(url)
-	return result.Error
+func (_self *UrlRepository) UpdateUrl(ctx context.Context, url *domain.Url) error {
+	var opts []QueryOptionFunc
+	opts = append(opts, WithCondition("id = ?", url.Id))
+	return _self.UpdateOnce(ctx, url, opts...)
 }
 
-func (r *UrlRepository) GetUrlByID(ctx context.Context, id int64) (*domain.Url, error) {
-	var url domain.Url
-	result := r.db.WithContext(ctx).First(&url, "id = ?", id)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return &url, nil
+func (_self *UrlRepository) GetUrlByID(ctx context.Context, id int64) (*domain.Url, error) {
+	var opts []QueryOptionFunc
+	opts = append(opts, WithCondition("id = ?", id))
+	opts = append(opts, WithLimit(1))
+	return _self.Find(ctx, opts...)
 }
 
-func (r *UrlRepository) GetUrlByDomainsAndQueues(ctx context.Context, urlDomain, queue []string, limit, offset int) ([]*domain.Url, error) {
-	var urls []*domain.Url
-	result := r.db.WithContext(ctx).
-		Where("domain IN ? AND queue IN ? AND is_active=true", urlDomain, queue).
-		Offset(offset).
-		Limit(limit).
-		Find(&urls)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return urls, nil
+func (_self *UrlRepository) GetUrlByDomainsAndQueues(ctx context.Context, urlDomain, queue []string, limit, offset int) ([]*domain.Url, error) {
+	var opts []QueryOptionFunc
+	opts = append(opts, WithCondition("domain IN ? AND queue IN ? AND is_active=true", urlDomain, queue))
+	opts = append(opts, WithLimit(int(limit)))
+	opts = append(opts, WithOffset(int(offset)))
+
+	return _self.Finds(ctx, opts...)
 }
 
-func (r *UrlRepository) CountUrlByDomainsAndQueues(ctx context.Context, domains, queues []string) (int64, error) {
-	var count int64
-	result := r.db.WithContext(ctx).
-		Model(&domain.Url{}).
-		Where("domain IN ? AND queue IN ? AND is_active=true", domains, queues).
-		Count(&count)
-	if result.Error != nil {
-		return 0, result.Error
-	}
-	return count, nil
+func (_self *UrlRepository) CountUrlByDomainsAndQueues(ctx context.Context, domains, queues []string) (int64, error) {
+	var opts []QueryOptionFunc
+	opts = append(opts, WithCondition("domain IN ? AND queue IN ? AND is_active=true", domains, queues))
+
+	return _self.CountOnce(ctx, opts...)
 }

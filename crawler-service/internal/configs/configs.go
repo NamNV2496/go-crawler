@@ -4,7 +4,7 @@ import "github.com/caarlos0/env/v6"
 
 type AppConfig struct {
 	GRPCPort string   `env:"grpc_port" envDefault:":9090"`
-	HTTPPort string   `env:"http_port" envDefault:"8080"`
+	HTTPPort string   `env:"http_port" envDefault:":8080"`
 	Domains  []string `env:"domains" envDefault:"gold,diamond"`
 	Workers  int      `env:"workers" envDefault:"100"`
 }

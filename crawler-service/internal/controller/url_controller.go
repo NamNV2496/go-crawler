@@ -2,10 +2,10 @@ package controller
 
 import (
 	"context"
-	"errors" // Import errors
+	"errors"
 	"strconv"
 
-	"github.com/namnv2496/crawler/internal/domain" // Import domain
+	"github.com/namnv2496/crawler/internal/domain"
 	"github.com/namnv2496/crawler/internal/service"
 
 	// Import service
@@ -58,6 +58,9 @@ func (u *UrlController) CreateUrl(ctx context.Context, req *crawlerv1.CreateUrlR
 func (u *UrlController) GetUrls(ctx context.Context, req *crawlerv1.GetUrlsRequest) (*crawlerv1.GetUrlsResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request is nil")
+	}
+	if req.Limit == 0 {
+		req.Limit = 20
 	}
 
 	urls, err := u.urlService.GetUrls(ctx, req.Limit, req.Offset)

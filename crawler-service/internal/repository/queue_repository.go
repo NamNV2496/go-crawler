@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/namnv2496/crawler/internal/domain"
-	"gorm.io/gorm"
 )
 
 type IQueueRepository interface {
+	IRepository[domain.Queue]
 	CreateQueue(ctx context.Context, queue *domain.Queue) (int64, error)
 	GetQueuesByDomain(ctx context.Context, domains []string, limit, offset int32) ([]*domain.Queue, error)
 	GetQueuesByDomainsAndQueue(ctx context.Context, domains []string, queue string, limit, offset int32) ([]*domain.Queue, error)
@@ -16,68 +16,64 @@ type IQueueRepository interface {
 }
 
 type QueueRepository struct {
-	db *gorm.DB
+	baseRepository[domain.Queue]
 }
 
 func NewQueueRepository(
-	dbSource IRepository,
+	dbSource IDatabase,
 ) *QueueRepository {
 	return &QueueRepository{
-		db: dbSource.GetDB(),
+		baseRepository: newBaseRepository[domain.Queue](dbSource.GetDB()),
 	}
 }
 
-func (r *QueueRepository) CreateQueue(ctx context.Context, queue *domain.Queue) (int64, error) {
-	err := r.db.Create(queue).Error
+func (_self *QueueRepository) CreateQueue(ctx context.Context, queue *domain.Queue) (int64, error) {
+	err := _self.InsertOnce(ctx, queue)
 	if err != nil {
 		return 0, err
 	}
 	return queue.Id, nil
 }
 
-func (r *QueueRepository) GetQueuesByDomain(ctx context.Context, domains []string, limit, offset int32) ([]*domain.Queue, error) {
-	var queues []*domain.Queue
-	tx := r.db.Limit(int(limit)).
-		Offset(int(offset)).Where("is_active =?", true)
-	if len(domains) > 0 {
-		tx = tx.Where("domain IN?", domains)
-	}
-	err := tx.Find(&queues).Error
+func (_self *QueueRepository) GetQueuesByDomain(ctx context.Context, domains []string, limit, offset int32) ([]*domain.Queue, error) {
+	var opts []QueryOptionFunc
+	opts = append(opts, WithCondition("is_active = true"))
+	opts = append(opts, WithOffset(int(offset)))
+	opts = append(opts, WithLimit(int(limit)))
+
+	queues, err := _self.Finds(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return queues, nil
 }
 
-func (r *QueueRepository) GetQueuesByDomainsAndQueue(ctx context.Context, domains []string, queue string, limit, offset int32) ([]*domain.Queue, error) {
-	var queues []*domain.Queue
+func (_self *QueueRepository) GetQueuesByDomainsAndQueue(ctx context.Context, domains []string, queue string, limit, offset int32) ([]*domain.Queue, error) {
+	var opts []QueryOptionFunc
+	opts = append(opts, WithOffset(int(offset)))
+	opts = append(opts, WithLimit(int(limit)))
+	opts = append(opts, WithCondition("is_active = true"))
+	opts = append(opts, WithCondition("domain IN ? AND queue = ?", domains, queue))
 
-	tx := r.db.Limit(int(limit)).
-		Offset(int(offset)).Where("is_active = ?", true)
-	if len(domains) > 0 {
-		tx = tx.Where("domain IN ? AND queue = ?", domains, queue)
-	}
-
-	err := tx.Find(&queues).Error
+	queues, err := _self.Finds(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return queues, nil
 }
 
-func (r *QueueRepository) UpdateQueue(ctx context.Context, queue *domain.Queue) error {
-	err := r.db.Save(queue).Error
+func (_self *QueueRepository) UpdateQueue(ctx context.Context, queue *domain.Queue) error {
+	err := _self.UpdateOnce(ctx, queue)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *QueueRepository) CountQueueByDomainsAndQueue(ctx context.Context, domains []string, queue string) (int64, error) {
-	var count int64
-	err := r.db.Model(&domain.Queue{}).Where("domain in ? AND queue = ?", domains, queue).Count(&count).Error
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
+func (_self *QueueRepository) CountQueueByDomainsAndQueue(ctx context.Context, domains []string, queue string) (int64, error) {
+	var opts []QueryOptionFunc
+	opts = append(opts, WithCondition("is_active = true"))
+	opts = append(opts, WithCondition("domain IN ? AND queue = ?", domains, queue))
+
+	return _self.CountOnce(ctx, opts...)
 }
