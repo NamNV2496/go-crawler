@@ -21,8 +21,8 @@ func NewQueueController(
 	}
 }
 
-func (c *QueueController) CreateQueue(ctx context.Context, req *crawlerv1.CreateQueueRequest) (*crawlerv1.CreateQueueResponse, error) {
-	id, err := c.queueService.CreateQueue(ctx, &domain.Queue{
+func (_self *QueueController) CreateQueue(ctx context.Context, req *crawlerv1.CreateQueueRequest) (*crawlerv1.CreateQueueResponse, error) {
+	id, err := _self.queueService.CreateQueue(ctx, &domain.Queue{
 		Queue:    req.Queue.Queue,
 		Domain:   req.Queue.Domain,
 		Cron:     req.Queue.Cron,
@@ -37,8 +37,8 @@ func (c *QueueController) CreateQueue(ctx context.Context, req *crawlerv1.Create
 		Status: "success",
 	}, nil
 }
-func (c *QueueController) GetQueues(ctx context.Context, req *crawlerv1.GetQueuesRequest) (*crawlerv1.GetQueuesResponse, error) {
-	queues, err := c.queueService.GetQueues(ctx, int32(req.Limit), int32(req.Offset))
+func (_self *QueueController) GetQueues(ctx context.Context, req *crawlerv1.GetQueuesRequest) (*crawlerv1.GetQueuesResponse, error) {
+	queues, err := _self.queueService.GetQueues(ctx, int32(req.Limit), int32(req.Offset))
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +57,8 @@ func (c *QueueController) GetQueues(ctx context.Context, req *crawlerv1.GetQueue
 		Queues: queuesRes,
 	}, nil
 }
-func (c *QueueController) UpdateQueue(ctx context.Context, req *crawlerv1.UpdateQueueRequest) (*crawlerv1.UpdateQueueResponse, error) {
-	err := c.queueService.UpdateQueue(ctx, &domain.Queue{
+func (_self *QueueController) UpdateQueue(ctx context.Context, req *crawlerv1.UpdateQueueRequest) (*crawlerv1.UpdateQueueResponse, error) {
+	err := _self.queueService.UpdateQueue(ctx, &domain.Queue{
 		Queue:    req.Queue.Queue,
 		Domain:   req.Queue.Domain,
 		Cron:     req.Queue.Cron,

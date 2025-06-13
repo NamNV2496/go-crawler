@@ -33,29 +33,29 @@ func NewWorkerPool(
 	}
 }
 
-func (wp *WorkerPool) Crawl(crawlFunc func() (any, error), depth int, statscallback StatsCallback, outputCallback OuputCallback) {
+func (_self *WorkerPool) Crawl(crawlFunc func() (any, error), depth int, statscallback StatsCallback, outputCallback OuputCallback) {
 	// Initialize the pool
-	wp.queue <- crawlFunc
-	wp.queueSize.Add(1)
+	_self.queue <- crawlFunc
+	_self.queueSize.Add(1)
 
 	// Start workers
-	for i := 0; i < wp.workers; i++ {
-		wp.waitGroup.Add(1)
-		go wp.worker(depth, statscallback, outputCallback)
+	for i := 0; i < _self.workers; i++ {
+		_self.waitGroup.Add(1)
+		go _self.worker(depth, statscallback, outputCallback)
 	}
 
 	// Start a goroutine to wait for completion
 	go func() {
-		wp.waitGroup.Wait()
-		close(wp.queue)
+		_self.waitGroup.Wait()
+		close(_self.queue)
 	}()
 }
 
-func (wp *WorkerPool) worker(depth int, statscallback StatsCallback, outputCallback OuputCallback) {
-	defer wp.waitGroup.Done()
+func (_self *WorkerPool) worker(depth int, statscallback StatsCallback, outputCallback OuputCallback) {
+	defer _self.waitGroup.Done()
 
-	for urlExecute := range wp.queue {
-		wp.activeWorkers.Add(1)
+	for urlExecute := range _self.queue {
+		_self.activeWorkers.Add(1)
 		// statscallback(wp.pagesCrawled.Load(), wp.activeWorkers.Load(), wp.queueSize.Load())
 		var output any
 		var err error
@@ -82,9 +82,9 @@ func (wp *WorkerPool) worker(depth int, statscallback StatsCallback, outputCallb
 		// 	}
 		// }
 
-		wp.pagesCrawled.Add(1)
-		wp.queueSize.Add(-1)
-		wp.activeWorkers.Add(-1)
+		_self.pagesCrawled.Add(1)
+		_self.queueSize.Add(-1)
+		_self.activeWorkers.Add(-1)
 		// statscallback(wp.pagesCrawled.Load(), wp.activeWorkers.Load(), wp.queueSize.Load())
 	}
 }

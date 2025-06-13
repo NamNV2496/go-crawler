@@ -3,9 +3,10 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 
-	"github.com/namnv2496/crawler/internal/domain"
+	"github.com/namnv2496/crawler/internal/entity"
 	"github.com/namnv2496/crawler/internal/service"
 
 	// Import service
@@ -27,35 +28,36 @@ func NewUrlController(
 	}
 }
 
-func (u *UrlController) CreateUrl(ctx context.Context, req *crawlerv1.CreateUrlRequest) (*crawlerv1.CreateUrlResponse, error) {
+func (_self *UrlController) CreateUrl(ctx context.Context, req *crawlerv1.CreateUrlRequest) (*crawlerv1.CreateUrlResponse, error) {
+	// rate limit
+	if err := _self.checkRateLimit(ctx, req.Url.Id); err != nil {
+		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %v", err)
+	}
+
 	if req == nil || req.Url == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request or url is nil")
 	}
-
-	// Map protobuf Url to domain Url
-	domainUrl := &domain.Url{
+	domainUrl := &entity.Url{
 		Url:         req.Url.Url,
 		Description: req.Url.Description,
 		Queue:       req.Url.Queue,
 		Domain:      req.Url.Domain,
 		IsActive:    req.Url.IsActive,
 		Method:      req.Url.Method,
-		// ID, CreatedAt, UpdatedAt will be set by the service/repository
 	}
 
-	id, err := u.urlService.CreateUrl(ctx, domainUrl)
+	id, err := _self.urlService.CreateUrl(ctx, domainUrl)
 	if err != nil {
-		// Handle specific errors if needed, otherwise return a generic internal error
 		return nil, status.Errorf(codes.Internal, "failed to create url: %v", err)
 	}
 
 	return &crawlerv1.CreateUrlResponse{
 		Id:     strconv.FormatInt(id, 10),
-		Status: "created", // Or a more descriptive status
+		Status: "created",
 	}, nil
 }
 
-func (u *UrlController) GetUrls(ctx context.Context, req *crawlerv1.GetUrlsRequest) (*crawlerv1.GetUrlsResponse, error) {
+func (_self *UrlController) GetUrls(ctx context.Context, req *crawlerv1.GetUrlsRequest) (*crawlerv1.GetUrlsResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request is nil")
 	}
@@ -63,16 +65,15 @@ func (u *UrlController) GetUrls(ctx context.Context, req *crawlerv1.GetUrlsReque
 		req.Limit = 20
 	}
 
-	urls, err := u.urlService.GetUrls(ctx, req.Limit, req.Offset)
+	urls, err := _self.urlService.GetUrls(ctx, req.Limit, req.Offset)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get urls: %v", err)
 	}
 
-	// Map domain Urls to protobuf Urls
 	protoUrls := make([]*crawlerv1.Url, len(urls))
 	for i, url := range urls {
 		protoUrls[i] = &crawlerv1.Url{
-			Id:          strconv.FormatInt(url.Id, 10), // Convert int64 to string for the ID field in the response struc
+			Id:          fmt.Sprintf("%d", url.Id),
 			Url:         url.Url,
 			Method:      url.Method,
 			Description: url.Description,
@@ -88,8 +89,7 @@ func (u *UrlController) GetUrls(ctx context.Context, req *crawlerv1.GetUrlsReque
 		Urls: protoUrls,
 	}, nil
 }
-
-func (u *UrlController) UpdateUrl(ctx context.Context, req *crawlerv1.UpdateUrlRequest) (*crawlerv1.UpdateUrlResponse, error) {
+func (_self *UrlController) UpdateUrl(ctx context.Context, req *crawlerv1.UpdateUrlRequest) (*crawlerv1.UpdateUrlResponse, error) {
 	if req == nil || req.Url == nil || req.Id == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "request, url, or id is nil/empty")
 	}
@@ -97,8 +97,8 @@ func (u *UrlController) UpdateUrl(ctx context.Context, req *crawlerv1.UpdateUrlR
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid ID format")
 	}
-	domainUrl := &domain.Url{
-		Id:          id, // Convert string ID to int64
+	domainUrl := &entity.Url{
+		Id:          id,
 		Url:         req.Url.Url,
 		Method:      req.Url.Method,
 		Description: req.Url.Description,
@@ -107,7 +107,7 @@ func (u *UrlController) UpdateUrl(ctx context.Context, req *crawlerv1.UpdateUrlR
 		IsActive:    req.Url.IsActive,
 	}
 
-	err = u.urlService.UpdateUrl(ctx, id, domainUrl)
+	err = _self.urlService.UpdateUrl(ctx, id, domainUrl)
 	if err != nil {
 		if errors.Is(err, errors.New("url not found")) { // Check for specific error from repository/service
 			return nil, status.Errorf(codes.NotFound, "url with ID %s not found", req.Id)
@@ -117,6 +117,21 @@ func (u *UrlController) UpdateUrl(ctx context.Context, req *crawlerv1.UpdateUrlR
 
 	return &crawlerv1.UpdateUrlResponse{
 		Id:     req.Id,
-		Status: "updated", // Or a more descriptive status
+		Status: "updated",
 	}, nil
+}
+
+func (_self *UrlController) checkRateLimit(ctx context.Context, userId string) error {
+	// count, err := _self.cache.Incr(ctx, userId).Result()
+	// if err != nil {
+	// 	return err
+	// }
+	// // If first time, set the expiration
+	// if count == 1 {
+	// 	if err := _self.cache.Expire(ctx, userId, time.Second*30); err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	return nil
 }

@@ -48,17 +48,17 @@ func NewUrlCronJob(
 
 var _ IUrlCronJob = &UrlCronJob{}
 
-func (w *UrlCronJob) Start() error {
+func (_self *UrlCronJob) Start() error {
 	cronJob := cron.New()
 	ctx := context.Background()
-	_, err := cronJob.AddFunc(w.conf.Queue.Normal, func() {
-		w.startJobWithQueue(ctx, "normal")
+	_, err := cronJob.AddFunc(_self.conf.Queue.Normal, func() {
+		_self.startJobWithQueue(ctx, "normal")
 	})
 	if err != nil {
 		return err
 	}
-	_, err = cronJob.AddFunc(w.conf.Queue.Priority, func() {
-		w.startJobWithQueue(ctx, "priority")
+	_, err = cronJob.AddFunc(_self.conf.Queue.Priority, func() {
+		_self.startJobWithQueue(ctx, "priority")
 	})
 	if err != nil {
 		return err
@@ -67,22 +67,22 @@ func (w *UrlCronJob) Start() error {
 	return nil
 }
 
-func (w *UrlCronJob) startJobWithQueue(ctx context.Context, queue string) {
+func (_self *UrlCronJob) startJobWithQueue(ctx context.Context, queue string) {
 	log.Println("start job with queue: ", queue)
-	numberOfQueues, err := w.queueRepo.CountQueueByDomainsAndQueue(ctx, w.domains, queue)
+	numberOfQueues, err := _self.queueRepo.CountQueueByDomainsAndQueue(ctx, _self.domains, queue)
 	if err != nil {
 		return
 	}
 	for i := range int(numberOfQueues/MaxUrls) + 1 {
-		queues, err := w.queueRepo.GetQueuesByDomainsAndQueue(ctx, w.domains, queue, MaxQueue, int32(i*MaxQueue))
+		queues, err := _self.queueRepo.GetQueuesByDomainsAndQueue(ctx, _self.domains, queue, MaxQueue, int32(i*MaxQueue))
 		if err != nil {
 			return
 		}
-		go w.publishToCrawler(ctx, queues)
+		go _self.publishToCrawler(ctx, queues)
 	}
 }
 
-func (w *UrlCronJob) publishToCrawler(ctx context.Context, queues []*domain.Queue) {
+func (_self *UrlCronJob) publishToCrawler(ctx context.Context, queues []*domain.Queue) {
 	domains := make([]string, len(queues))
 	queueUrls := make([]string, len(queues))
 	for i, queue := range queues {
@@ -90,13 +90,13 @@ func (w *UrlCronJob) publishToCrawler(ctx context.Context, queues []*domain.Queu
 		queueUrls[i] = queue.Queue
 	}
 
-	numberOfUrls, err := w.urlRepo.CountUrlByDomainsAndQueues(ctx, domains, queueUrls)
+	numberOfUrls, err := _self.urlRepo.CountUrlByDomainsAndQueues(ctx, domains, queueUrls)
 	if err != nil {
 		return
 	}
 	for i := range int(numberOfUrls/MaxUrls) + 1 {
 		go func() {
-			urls, err := w.urlRepo.GetUrlByDomainsAndQueues(ctx, domains, queueUrls, MaxWorker, i*MaxWorker)
+			urls, err := _self.urlRepo.GetUrlByDomainsAndQueues(ctx, domains, queueUrls, MaxWorker, i*MaxWorker)
 			if err != nil {
 				return
 			}
@@ -110,7 +110,7 @@ func (w *UrlCronJob) publishToCrawler(ctx context.Context, queues []*domain.Queu
 					IsActive:    url.IsActive,
 				}
 				log.Printf("publish to crawler queue: %s, url: %s", url.Queue, url.Url)
-				err := w.producers.Publish(ctx, url.Queue, strconv.Itoa(int(url.Id)), data)
+				err := _self.producers.Publish(ctx, url.Queue, strconv.Itoa(int(url.Id)), data)
 				if err != nil {
 					// retry
 					log.Println(err)

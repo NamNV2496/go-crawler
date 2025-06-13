@@ -40,12 +40,12 @@ func newBaseRepository[E IEntity](db *gorm.DB) baseRepository[E] {
 	}
 }
 
-func (r *baseRepository[E]) GetDB() *gorm.DB {
-	return r.db
+func (_self *baseRepository[E]) GetDB() *gorm.DB {
+	return _self.db
 }
 
-func (r *baseRepository[E]) InsertOnce(ctx context.Context, entity *E, opts ...QueryOptionFunc) error {
-	tx := r.db.WithContext(ctx)
+func (_self *baseRepository[E]) InsertOnce(ctx context.Context, entity *E, opts ...QueryOptionFunc) error {
+	tx := _self.db.WithContext(ctx)
 	for _, opt := range opts {
 		tx = opt(tx)
 	}

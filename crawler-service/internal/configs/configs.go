@@ -28,6 +28,12 @@ type DatabaseConfig struct {
 	SSLMode  string `env:"db_ssl_mode" envDefault:"disable"`
 }
 
+type Redis struct {
+	Addr     string `env:"redis_addr" envDefault:"localhost:6379"`
+	Password string `env:"redis_password" envDefault:""`
+	DB       int    `env:"redis_db" envDefault:"0"`
+}
+
 type Queue struct {
 	Normal   string `env:"queue_normal_cron" envDefault:"*/1 * * * *"`
 	Priority string `env:"queue_priority_cron" envDefault:"*/15 * * * *"`
@@ -47,6 +53,7 @@ type Config struct {
 	DatabaseConfig      DatabaseConfig
 	Queue               Queue
 	Telegram            Telegram
+	Redis               Redis
 }
 
 func LoadConfig() *Config {
