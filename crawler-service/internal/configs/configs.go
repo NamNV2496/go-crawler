@@ -35,7 +35,7 @@ type Redis struct {
 }
 
 type Queue struct {
-	Normal   string `env:"queue_normal_cron" envDefault:"*/1 * * * *"`
+	Normal   string `env:"queue_normal_cron" envDefault:"*/5 * * * *"`
 	Priority string `env:"queue_priority_cron" envDefault:"*/15 * * * *"`
 }
 

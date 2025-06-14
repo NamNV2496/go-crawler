@@ -21,7 +21,7 @@ type ICrawlerService interface {
 	Crawl(ctx context.Context, url entity.Url) error
 }
 
-type Crawler struct {
+type CrawlerService struct {
 	maxDepth    int
 	visited     map[string]bool
 	mutex       sync.Mutex
@@ -36,8 +36,8 @@ func NewCrawlerService(
 	teleService ITeleService,
 	resultRepo repository.IResultRepository,
 	workerPool IWorkerPool,
-) *Crawler {
-	return &Crawler{
+) *CrawlerService {
+	return &CrawlerService{
 		maxDepth:    3,
 		visited:     make(map[string]bool),
 		results:     make(map[string]string),
@@ -48,7 +48,7 @@ func NewCrawlerService(
 }
 
 // Crawl starts crawling from the given URL up to the maximum depth
-func (_self *Crawler) Crawl(ctx context.Context, url entity.Url) error {
+func (_self *CrawlerService) Crawl(ctx context.Context, url entity.Url) error {
 	err := _self.crawlPage(ctx, url, _self.maxDepth)
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func (_self *Crawler) Crawl(ctx context.Context, url entity.Url) error {
 	return nil
 }
 
-func (_self *Crawler) crawlPage(ctx context.Context, url entity.Url, depth int) error {
+func (_self *CrawlerService) crawlPage(ctx context.Context, url entity.Url, depth int) error {
 	if depth > _self.maxDepth {
 		return nil
 	}
@@ -81,7 +81,7 @@ func (_self *Crawler) crawlPage(ctx context.Context, url entity.Url, depth int) 
 	return nil
 }
 
-func (_self *Crawler) crawlGET(ctx context.Context, url entity.Url, depth int) (string, error) {
+func (_self *CrawlerService) crawlGET(ctx context.Context, url entity.Url, depth int) (string, error) {
 	resp, err := http.Get(url.Url)
 	if err != nil {
 		return "", fmt.Errorf("error fetching %s: %v", url.Url, err)
@@ -101,7 +101,7 @@ func (_self *Crawler) crawlGET(ctx context.Context, url entity.Url, depth int) (
 	return doc.Data, nil
 }
 
-func (_self *Crawler) crawlPOST(ctx context.Context, url entity.Url, depth int) (string, error) {
+func (_self *CrawlerService) crawlPOST(ctx context.Context, url entity.Url, depth int) (string, error) {
 	resp, err := http.Post(url.Url, "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return "", fmt.Errorf("error posting %s: %v", url.Url, err)
@@ -121,7 +121,7 @@ func (_self *Crawler) crawlPOST(ctx context.Context, url entity.Url, depth int) 
 	return doc.Data, nil
 }
 
-func (_self *Crawler) crawlCurl(ctx context.Context, url entity.Url, depth int) (string, error) {
+func (_self *CrawlerService) crawlCurl(ctx context.Context, url entity.Url, depth int) (string, error) {
 	// Parse the curl command string
 	parts := strings.Split(url.Url, "--")
 	var args []string

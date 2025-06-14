@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/namnv2496/crawler/internal/configs"
-	"github.com/redis/go-redis/v9"
 )
 
 type CacheObj interface {

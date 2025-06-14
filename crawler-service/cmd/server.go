@@ -16,6 +16,7 @@ import (
 	"github.com/namnv2496/crawler/internal/service"
 	"github.com/namnv2496/crawler/internal/service/mq"
 	crawlerv1 "github.com/namnv2496/crawler/pkg/generated/pkg/proto"
+	"github.com/namnv2496/crawler/pkg/utils"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
 	"google.golang.org/grpc"
@@ -51,6 +52,8 @@ func InvokeServer(invokers ...any) *fx.App {
 			// MQ
 			fx.Annotate(mq.NewKafkaProducer, fx.As(new(mq.IProducer))),
 			fx.Annotate(service.NewUrlCronJob, fx.As(new(service.IUrlCronJob))),
+			// rate limit
+			fx.Annotate(startRateLimit, fx.As(new(utils.IRateLimit))),
 		),
 		fx.Supply(
 			config,
@@ -108,11 +111,27 @@ func startServer(
 	return server.Serve(listener)
 }
 
-func startCronjob() error {
+func startCronjob(
+	urlCronJob service.IUrlCronJob,
+) error {
 	// start cron job
-	// if err := urlCronJob.Start(); err != nil {
-	// 	panic("failed to start publisher")
-	// }
+	if err := urlCronJob.Start(); err != nil {
+		panic("failed to start publisher")
+	}
 	fmt.Printf("Cron job is started")
 	return nil
+}
+
+func startRateLimit(
+	conf *configs.Config,
+) *utils.RateLimit {
+	rateLimit := utils.NewRateLimitWithOption(conf, &utils.RatelimitOpt{
+		BlockRetention: time.Minute * 2,
+		CalculateBlockDuration: func(count int) time.Duration {
+			return time.Minute * 2 * time.Duration(count)
+		},
+	})
+
+	fmt.Printf("Rate limit is started")
+	return rateLimit
 }

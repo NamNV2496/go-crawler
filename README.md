@@ -11,6 +11,19 @@ A simple web crawler written in Go that crawls websites and extracts information
 - Extracts page titles
 - Follows links to discover more pages
 
+## Technologies
+
+```
+- Go: 1.23.4
+- Redis: 7-alpine
+- Kafka: 3.7.1
+- PostgreSQL: 17
+
+- Ratelimit: "github.com/go-redis/redis_rate/v9"
+- Cron job: "github.com/robfig/cron/v3"
+- Gorm: "gorm.io/gorm"
+```
+
 ## Installation
 
 ```bash

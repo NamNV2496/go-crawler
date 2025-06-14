@@ -10,7 +10,9 @@ import (
 	"github.com/namnv2496/crawler/internal/service"
 
 	// Import service
+
 	crawlerv1 "github.com/namnv2496/crawler/pkg/generated/pkg/proto"
+	"github.com/namnv2496/crawler/pkg/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -18,19 +20,22 @@ import (
 type UrlController struct {
 	crawlerv1.UnimplementedUrlServiceServer
 	urlService service.IUrlService
+	ratelimter utils.IRateLimit
 }
 
 func NewUrlController(
 	urlService service.IUrlService,
+	ratelimter utils.IRateLimit,
 ) crawlerv1.UrlServiceServer {
 	return &UrlController{
 		urlService: urlService,
+		ratelimter: ratelimter,
 	}
 }
 
 func (_self *UrlController) CreateUrl(ctx context.Context, req *crawlerv1.CreateUrlRequest) (*crawlerv1.CreateUrlResponse, error) {
 	// rate limit
-	if err := _self.checkRateLimit(ctx, req.Url.Id); err != nil {
+	if err := _self.checkInserRateLimit(ctx, req.Url.Id); err != nil {
 		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %v", err)
 	}
 
@@ -61,6 +66,10 @@ func (_self *UrlController) GetUrls(ctx context.Context, req *crawlerv1.GetUrlsR
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request is nil")
 	}
+	// rate limit
+	if err := _self.checkRateLimit(ctx, "test"); err != nil {
+		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %v", err)
+	}
 	if req.Limit == 0 {
 		req.Limit = 20
 	}
@@ -85,6 +94,11 @@ func (_self *UrlController) GetUrls(ctx context.Context, req *crawlerv1.GetUrlsR
 		}
 	}
 
+	if len(protoUrls) == 0 {
+		return &crawlerv1.GetUrlsResponse{
+			Urls: []*crawlerv1.Url{},
+		}, nil
+	}
 	return &crawlerv1.GetUrlsResponse{
 		Urls: protoUrls,
 	}, nil
@@ -121,17 +135,26 @@ func (_self *UrlController) UpdateUrl(ctx context.Context, req *crawlerv1.Update
 	}, nil
 }
 
-func (_self *UrlController) checkRateLimit(ctx context.Context, userId string) error {
-	// count, err := _self.cache.Incr(ctx, userId).Result()
-	// if err != nil {
-	// 	return err
-	// }
-	// // If first time, set the expiration
-	// if count == 1 {
-	// 	if err := _self.cache.Expire(ctx, userId, time.Second*30); err != nil {
-	// 		return err
-	// 	}
-	// }
+func (_self *UrlController) checkRateLimit(ctx context.Context, key string) error {
+	// rate limit 10 request/ minute
+	pass, err := _self.ratelimter.Allow(ctx, "query_url", key, utils.LimitPerMinute(10))
+	if err != nil {
+		return err
+	}
+	if !pass {
+		return fmt.Errorf("rate limit exceeded")
+	}
+	return nil
+}
 
+func (_self *UrlController) checkInserRateLimit(ctx context.Context, key string) error {
+	// rate limit 50 request/ second
+	pass, err := _self.ratelimter.Allow(ctx, "create_url", key, utils.LimitPerSecond(50))
+	if err != nil {
+		return err
+	}
+	if !pass {
+		return fmt.Errorf("rate limit exceeded")
+	}
 	return nil
 }

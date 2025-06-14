@@ -64,12 +64,12 @@ func (_self *UrlService) GetUrls(ctx context.Context, limit, offset int32) ([]*e
 		return nil, err
 	}
 	for _, url := range urls {
-		var elem *entity.Url
+		var elem entity.Url
 		err = utils.Copy(&elem, url)
 		if err != nil {
 			return nil, err
 		}
-		resp = append(resp, elem)
+		resp = append(resp, &elem)
 	}
 	return resp, nil
 }
