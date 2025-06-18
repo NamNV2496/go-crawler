@@ -67,19 +67,27 @@ func NewRateLimitWithOption(
 
 var _ IRateLimit = &RateLimit{}
 
-func LimitPerSecond(rate int) redisratev9.Limit {
+func LimitPerSecond(rate, burst int) redisratev9.Limit {
 	return redisratev9.Limit{
 		Rate:   rate,
 		Period: time.Second,
-		Burst:  rate,
+		Burst:  burst,
 	}
 }
 
-func LimitPerMinute(rate int) redisratev9.Limit {
+func LimitPerMinute(rate, burst int) redisratev9.Limit {
 	return redisratev9.Limit{
 		Rate:   rate,
 		Period: time.Minute,
-		Burst:  rate,
+		Burst:  burst,
+	}
+}
+
+func LimitCustom(rate, burst int, period time.Duration) redisratev9.Limit {
+	return redisratev9.Limit{
+		Rate:   rate,
+		Period: period,
+		Burst:  burst,
 	}
 }
 

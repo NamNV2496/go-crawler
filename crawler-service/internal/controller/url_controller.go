@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/namnv2496/crawler/internal/entity"
 	"github.com/namnv2496/crawler/internal/service"
@@ -137,7 +138,7 @@ func (_self *UrlController) UpdateUrl(ctx context.Context, req *crawlerv1.Update
 
 func (_self *UrlController) checkRateLimit(ctx context.Context, key string) error {
 	// rate limit 10 request/ minute
-	pass, err := _self.ratelimter.Allow(ctx, "query_url", key, utils.LimitPerMinute(10))
+	pass, err := _self.ratelimter.Allow(ctx, "query_url", key, utils.LimitPerMinute(10, 1))
 	if err != nil {
 		return err
 	}
@@ -149,7 +150,7 @@ func (_self *UrlController) checkRateLimit(ctx context.Context, key string) erro
 
 func (_self *UrlController) checkInserRateLimit(ctx context.Context, key string) error {
 	// rate limit 50 request/ second
-	pass, err := _self.ratelimter.Allow(ctx, "create_url", key, utils.LimitPerSecond(50))
+	pass, err := _self.ratelimter.Allow(ctx, "create_url", key, utils.LimitCustom(50, 1, time.Second))
 	if err != nil {
 		return err
 	}
