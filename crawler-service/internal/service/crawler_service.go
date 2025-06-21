@@ -14,7 +14,13 @@ import (
 	"github.com/namnv2496/crawler/internal/domain"
 	"github.com/namnv2496/crawler/internal/entity"
 	"github.com/namnv2496/crawler/internal/repository"
+	"github.com/temoto/robotstxt"
 	"golang.org/x/net/html"
+)
+
+const (
+	METHOD_ROBOTS string = "ROBOTS"
+	METHOD_CURL   string = "CURL"
 )
 
 type ICrawlerService interface {
@@ -49,6 +55,9 @@ func NewCrawlerService(
 
 // Crawl starts crawling from the given URL up to the maximum depth
 func (_self *CrawlerService) Crawl(ctx context.Context, url entity.Url) error {
+	if !url.IsActive {
+		return nil
+	}
 	err := _self.crawlPage(ctx, url, _self.maxDepth)
 	if err != nil {
 		return err
@@ -68,12 +77,14 @@ func (_self *CrawlerService) crawlPage(ctx context.Context, url entity.Url, dept
 	_self.visited[url.Url] = true
 	_self.mutex.Unlock()
 	switch url.Method {
-	case "GET":
+	case http.MethodGet:
 		_self.crawlGET(ctx, url, depth)
-	case "POST":
+	case http.MethodPost:
 		_self.crawlPOST(ctx, url, depth)
-	case "CURL":
+	case METHOD_CURL:
 		_self.crawlCurl(ctx, url, depth)
+	case METHOD_ROBOTS:
+		_self.crawlRobotFile(ctx, url, depth)
 	default:
 		return fmt.Errorf("unsupported HTTP method: %s", url.Method)
 	}
@@ -81,7 +92,35 @@ func (_self *CrawlerService) crawlPage(ctx context.Context, url entity.Url, dept
 	return nil
 }
 
+func (_self *CrawlerService) crawlRobotFile(ctx context.Context, url entity.Url, depth int) (string, error) {
+	if !isValidURL(url.Url) {
+		return "", nil
+	}
+	resp, err := http.Get(url.Url)
+	if err != nil {
+		return "", fmt.Errorf("error fetching %s: %v", url.Url, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("non-200 status code: %d for %s", resp.StatusCode, url.Url)
+	}
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("error reading response body:", err)
+	}
+	body := string(bodyBytes)
+	fmt.Println(body)
+	// parsing robot.txt
+	if err := _self.handleRobotFile(bodyBytes); err != nil {
+		return "", err
+	}
+	return "", nil
+}
+
 func (_self *CrawlerService) crawlGET(ctx context.Context, url entity.Url, depth int) (string, error) {
+	if !isValidURL(url.Url) {
+		return "", nil
+	}
 	resp, err := http.Get(url.Url)
 	if err != nil {
 		return "", fmt.Errorf("error fetching %s: %v", url.Url, err)
@@ -102,6 +141,9 @@ func (_self *CrawlerService) crawlGET(ctx context.Context, url entity.Url, depth
 }
 
 func (_self *CrawlerService) crawlPOST(ctx context.Context, url entity.Url, depth int) (string, error) {
+	if !isValidURL(url.Url) {
+		return "", nil
+	}
 	resp, err := http.Post(url.Url, "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return "", fmt.Errorf("error posting %s: %v", url.Url, err)
@@ -186,6 +228,21 @@ func (_self *CrawlerService) crawlCurl(ctx context.Context, url entity.Url, dept
 	resp := string(output)
 	io.NopCloser(bytes.NewReader(output))
 	return resp, nil
+}
+
+func (_self *CrawlerService) handleRobotFile(bodyBytes []byte) error {
+	// parsing robot.txt
+	robots, err := robotstxt.FromBytes(bodyBytes)
+	if err != nil {
+		panic(err)
+	}
+	// Replace "Googlebot" with your user-agent string
+	group := robots.FindGroup("Googlebot")
+	testUrl := "/san-pham/iphone-15.html"
+
+	allowed := group.Test(testUrl)
+	fmt.Printf("Googlebot can fetch %s: %v\n", testUrl, allowed)
+	return nil
 }
 
 func extractTitle(n *html.Node) string {

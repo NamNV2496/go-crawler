@@ -17,6 +17,7 @@ type Url struct {
 	Method      string    `json:"method"`
 	Description string    `json:"description"`
 	Queue       string    `json:"queue"`
+	Quantity    int64     `json:"quantity"`
 	Domain      string    `json:"domain"`
 	IsActive    bool      `json:"is_active"`
 	CreatedAt   time.Time `json:"created_at"`

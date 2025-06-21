@@ -12,7 +12,7 @@ type IUrlRepository interface {
 	GetUrls(ctx context.Context, limit, offset int32) ([]*domain.Url, error)
 	UpdateUrl(ctx context.Context, url *domain.Url) error
 	GetUrlByID(ctx context.Context, id int64) (*domain.Url, error)
-	GetUrlByDomainsAndQueues(ctx context.Context, urlDomain, queue []string, limit, offset int) ([]*domain.Url, error)
+	GetUrlByDomainAndQueue(ctx context.Context, urlDomain, queue string, limit, offset int) ([]*domain.Url, error)
 	CountUrlByDomainsAndQueues(ctx context.Context, domains, queues []string) (int64, error)
 }
 
@@ -54,9 +54,9 @@ func (_self *UrlRepository) GetUrlByID(ctx context.Context, id int64) (*domain.U
 	return _self.Find(ctx, opts...)
 }
 
-func (_self *UrlRepository) GetUrlByDomainsAndQueues(ctx context.Context, urlDomain, queue []string, limit, offset int) ([]*domain.Url, error) {
+func (_self *UrlRepository) GetUrlByDomainAndQueue(ctx context.Context, urlDomain, queue string, limit, offset int) ([]*domain.Url, error) {
 	var opts []QueryOptionFunc
-	opts = append(opts, WithCondition("domain IN ? AND queue IN ? AND is_active=true", urlDomain, queue))
+	opts = append(opts, WithCondition("domain = ? AND queue = ? AND is_active=true", urlDomain, queue))
 	opts = append(opts, WithLimit(int(limit)))
 	opts = append(opts, WithOffset(int(offset)))
 

@@ -149,8 +149,8 @@ func (_self *UrlController) checkRateLimit(ctx context.Context, key string) erro
 }
 
 func (_self *UrlController) checkInserRateLimit(ctx context.Context, key string) error {
-	// rate limit 50 request/ second
-	pass, err := _self.ratelimter.Allow(ctx, "create_url", key, utils.LimitCustom(50, 1, time.Second))
+	// rate limit 50 request/ second you can use LimitSecond(50 /*rate*/, 1)
+	pass, err := _self.ratelimter.Allow(ctx, "create_url", key, utils.LimitCustom(50 /*rate*/, 1 /*burst*/, time.Second))
 	if err != nil {
 		return err
 	}

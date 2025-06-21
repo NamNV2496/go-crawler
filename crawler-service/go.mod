@@ -15,6 +15,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/segmentio/kafka-go v0.4.48
 	github.com/spf13/cobra v1.9.1
+	github.com/temoto/robotstxt v1.1.2
 	go.uber.org/fx v1.24.0
 	golang.org/x/net v0.40.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250519155744-55703ea1f237

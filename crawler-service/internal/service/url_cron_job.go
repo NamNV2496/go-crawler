@@ -52,14 +52,16 @@ func (_self *UrlCronJob) Start() error {
 	cronJob := cron.New()
 	ctx := context.Background()
 	_, err := cronJob.AddFunc(_self.conf.Queue.Normal, func() {
-		_self.startJobWithQueue(ctx, "normal")
+		_self.startJobWithQueue(ctx, entity.QueueTypeNormal)
 	})
+	log.Printf("Cron job queue %s, every %s minutes is started", entity.QueueTypeNormal, _self.conf.Queue.Normal)
 	if err != nil {
 		return err
 	}
 	_, err = cronJob.AddFunc(_self.conf.Queue.Priority, func() {
-		_self.startJobWithQueue(ctx, "priority")
+		_self.startJobWithQueue(ctx, entity.QueueTypePriority)
 	})
+	log.Printf("Cron job queue %s, every %s minutes is started", entity.QueueTypePriority, _self.conf.Queue.Priority)
 	if err != nil {
 		return err
 	}
@@ -67,56 +69,63 @@ func (_self *UrlCronJob) Start() error {
 	return nil
 }
 
-func (_self *UrlCronJob) startJobWithQueue(ctx context.Context, queue string) {
-	log.Println("start job with queue: ", queue)
-	numberOfQueues, err := _self.queueRepo.CountQueueByDomainsAndQueue(ctx, _self.domains, queue)
-	if err != nil {
+func (_self *UrlCronJob) startJobWithQueue(ctx context.Context, queueName string) {
+	log.Println("start job with queue: ", queueName)
+	var numberOfQueues int64
+	var reqErr error
+	if len(_self.domains) != 0 {
+		numberOfQueues, reqErr = _self.queueRepo.CountQueueByDomainsAndQueueName(ctx, _self.domains, queueName)
+	} else {
+		numberOfQueues, reqErr = _self.queueRepo.CountQueueByQueueName(ctx, queueName)
+	}
+	if reqErr != nil {
 		return
 	}
 	for i := range int(numberOfQueues/MaxUrls) + 1 {
-		queues, err := _self.queueRepo.GetQueuesByDomainsAndQueue(ctx, _self.domains, queue, MaxQueue, int32(i*MaxQueue))
-		if err != nil {
+		var queueInfors []*domain.Queue
+		var reqErr error
+		if len(_self.domains) != 0 {
+			queueInfors, reqErr = _self.queueRepo.GetQueuesByDomainsAndQueueName(ctx, _self.domains, queueName, MaxQueue, int32(i*MaxQueue))
+		} else {
+			queueInfors, reqErr = _self.queueRepo.GetQueuesByQueueName(ctx, queueName, MaxQueue, int32(i*MaxQueue))
+		}
+		if reqErr != nil {
 			return
 		}
-		go _self.publishToCrawler(ctx, queues)
+		go _self.getUrlByQueueInfo(ctx, queueInfors)
 	}
 }
 
-func (_self *UrlCronJob) publishToCrawler(ctx context.Context, queues []*domain.Queue) {
-	domains := make([]string, len(queues))
-	queueUrls := make([]string, len(queues))
-	for i, queue := range queues {
-		domains[i] = queue.Domain
-		queueUrls[i] = queue.Queue
-	}
-
-	numberOfUrls, err := _self.urlRepo.CountUrlByDomainsAndQueues(ctx, domains, queueUrls)
-	if err != nil {
-		return
-	}
-	for i := range int(numberOfUrls/MaxUrls) + 1 {
+func (_self *UrlCronJob) getUrlByQueueInfo(ctx context.Context, queueInfors []*domain.Queue) {
+	// NEED TO IMPROVE: RC: Use query inside for loop
+	for _, queue := range queueInfors {
 		go func() {
-			urls, err := _self.urlRepo.GetUrlByDomainsAndQueues(ctx, domains, queueUrls, MaxWorker, i*MaxWorker)
+			urls, err := _self.urlRepo.GetUrlByDomainAndQueue(ctx, queue.Domain, queue.Queue, int(queue.Quantity), 0)
 			if err != nil {
 				return
 			}
 			for _, url := range urls {
-				data := entity.Url{
+				urlData := entity.Url{
 					Url:         url.Url,
 					Method:      url.Method,
 					Description: url.Description,
 					Queue:       url.Queue,
+					Quantity:    queue.Quantity,
 					Domain:      url.Domain,
 					IsActive:    url.IsActive,
 				}
-				log.Printf("publish to crawler queue: %s, url: %s", url.Queue, url.Url)
-				err := _self.producers.Publish(ctx, url.Queue, strconv.Itoa(int(url.Id)), data)
-				if err != nil {
-					// retry
-					log.Println(err)
-					return
-				}
+				log.Printf("publish to crawler queue: %s, request: %+v", url.Queue, url)
+				_self.publishToCrawler(ctx, urlData)
 			}
 		}()
+	}
+}
+
+func (_self *UrlCronJob) publishToCrawler(ctx context.Context, urlData entity.Url) {
+	err := _self.producers.Publish(ctx, urlData.Queue, strconv.Itoa(int(urlData.Id)), urlData)
+	if err != nil {
+		// Can apply retry at here
+		log.Printf("Publish message to kafka failed: %+v, err: %s", urlData, err)
+		return
 	}
 }

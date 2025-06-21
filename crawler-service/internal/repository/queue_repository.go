@@ -10,9 +10,11 @@ type IQueueRepository interface {
 	IRepository[domain.Queue]
 	CreateQueue(ctx context.Context, queue *domain.Queue) (int64, error)
 	GetQueuesByDomain(ctx context.Context, domains []string, limit, offset int32) ([]*domain.Queue, error)
-	GetQueuesByDomainsAndQueue(ctx context.Context, domains []string, queue string, limit, offset int32) ([]*domain.Queue, error)
+	GetQueuesByDomainsAndQueueName(ctx context.Context, domains []string, queue string, limit, offset int32) ([]*domain.Queue, error)
+	GetQueuesByQueueName(ctx context.Context, queue string, limit, offset int32) ([]*domain.Queue, error)
 	UpdateQueue(ctx context.Context, queue *domain.Queue) error
-	CountQueueByDomainsAndQueue(ctx context.Context, domains []string, queue string) (int64, error)
+	CountQueueByDomainsAndQueueName(ctx context.Context, domains []string, queue string) (int64, error)
+	CountQueueByQueueName(ctx context.Context, queue string) (int64, error)
 }
 
 type QueueRepository struct {
@@ -26,6 +28,8 @@ func NewQueueRepository(
 		baseRepository: newBaseRepository[domain.Queue](dbSource.GetDB()),
 	}
 }
+
+var _ IQueueRepository = &QueueRepository{}
 
 func (_self *QueueRepository) CreateQueue(ctx context.Context, queue *domain.Queue) (int64, error) {
 	err := _self.InsertOnce(ctx, queue)
@@ -48,12 +52,26 @@ func (_self *QueueRepository) GetQueuesByDomain(ctx context.Context, domains []s
 	return queues, nil
 }
 
-func (_self *QueueRepository) GetQueuesByDomainsAndQueue(ctx context.Context, domains []string, queue string, limit, offset int32) ([]*domain.Queue, error) {
+func (_self *QueueRepository) GetQueuesByDomainsAndQueueName(ctx context.Context, domains []string, queue string, limit, offset int32) ([]*domain.Queue, error) {
 	var opts []QueryOptionFunc
 	opts = append(opts, WithOffset(int(offset)))
 	opts = append(opts, WithLimit(int(limit)))
 	opts = append(opts, WithCondition("is_active = true"))
 	opts = append(opts, WithCondition("domain IN ? AND queue = ?", domains, queue))
+
+	queues, err := _self.Finds(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return queues, nil
+}
+
+func (_self *QueueRepository) GetQueuesByQueueName(ctx context.Context, queue string, limit, offset int32) ([]*domain.Queue, error) {
+	var opts []QueryOptionFunc
+	opts = append(opts, WithOffset(int(offset)))
+	opts = append(opts, WithLimit(int(limit)))
+	opts = append(opts, WithCondition("is_active = true"))
+	opts = append(opts, WithCondition("queue = ?", queue))
 
 	queues, err := _self.Finds(ctx, opts...)
 	if err != nil {
@@ -70,10 +88,18 @@ func (_self *QueueRepository) UpdateQueue(ctx context.Context, queue *domain.Que
 	return nil
 }
 
-func (_self *QueueRepository) CountQueueByDomainsAndQueue(ctx context.Context, domains []string, queue string) (int64, error) {
+func (_self *QueueRepository) CountQueueByDomainsAndQueueName(ctx context.Context, domains []string, queue string) (int64, error) {
 	var opts []QueryOptionFunc
 	opts = append(opts, WithCondition("is_active = true"))
 	opts = append(opts, WithCondition("domain IN ? AND queue = ?", domains, queue))
+
+	return _self.CountOnce(ctx, opts...)
+}
+
+func (_self *QueueRepository) CountQueueByQueueName(ctx context.Context, queue string) (int64, error) {
+	var opts []QueryOptionFunc
+	opts = append(opts, WithCondition("is_active = true"))
+	opts = append(opts, WithCondition("queue = ?", queue))
 
 	return _self.CountOnce(ctx, opts...)
 }

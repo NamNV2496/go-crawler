@@ -5,7 +5,7 @@ import "github.com/caarlos0/env/v6"
 type AppConfig struct {
 	GRPCPort string   `env:"grpc_port" envDefault:":9090"`
 	HTTPPort string   `env:"http_port" envDefault:":8080"`
-	Domains  []string `env:"domains" envDefault:"gold,diamond"`
+	Domains  []string `env:"domains" envDefault:"phone_cellphones,phone_thegioididong"` // gold,diamond
 	Workers  int      `env:"workers" envDefault:"100"`
 }
 type KafkaProducerConfig struct {
@@ -35,7 +35,7 @@ type Redis struct {
 }
 
 type Queue struct {
-	Normal   string `env:"queue_normal_cron" envDefault:"*/5 * * * *"`
+	Normal   string `env:"queue_normal_cron" envDefault:"*/1 * * * *"`
 	Priority string `env:"queue_priority_cron" envDefault:"*/15 * * * *"`
 }
 

@@ -20,7 +20,10 @@ var CrawlerWorkerCmd = &cobra.Command{
 	Use:   "crawler-worker",
 	Short: "A simple web crawler worker",
 	Run: func(cmd *cobra.Command, args []string) {
-		InvokeCrawlerWorker(startCrawlerWorker)
+		InvokeCrawlerWorker(
+			startCrawlerWorker,
+			// startTest,
+		)
 	},
 }
 
@@ -55,6 +58,7 @@ func startCrawlerWorker(
 	startConsumer(consumer, crawlerService)
 	select {}
 }
+
 func startConsumer(
 	consumer mq.IConsumer,
 	crawlerService service.ICrawlerService,
@@ -89,5 +93,23 @@ func startConsumer(
 				}
 			}
 		}(consumer)
+	}
+}
+
+func startTest(
+	crawlerService service.ICrawlerService,
+) {
+	ctx := context.Background()
+	url := entity.Url{
+		Id:       1,
+		Url:      "https://cellphones.com.vn/robots.txt",
+		Method:   "ROBOTS",
+		Queue:    "priority",
+		Domain:   "phone_cellphones",
+		IsActive: true,
+	}
+	if err := crawlerService.Crawl(ctx, url); err != nil {
+		log.Println(err)
+		return
 	}
 }

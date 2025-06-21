@@ -28,8 +28,8 @@ var serverCmd = &cobra.Command{
 	Short: "Start the server",
 	Run: func(cmd *cobra.Command, args []string) {
 		InvokeServer(
-			startServer,
 			startCronjob,
+			startServer,
 		)
 	},
 }
@@ -118,7 +118,6 @@ func startCronjob(
 	if err := urlCronJob.Start(); err != nil {
 		panic("failed to start publisher")
 	}
-	fmt.Printf("Cron job is started")
 	return nil
 }
 

@@ -36,7 +36,7 @@ type baseRepository[E IEntity] struct {
 
 func newBaseRepository[E IEntity](db *gorm.DB) baseRepository[E] {
 	return baseRepository[E]{
-		db: db,
+		db: db.Model(new(E)),
 	}
 }
 
@@ -53,8 +53,8 @@ func (_self *baseRepository[E]) InsertOnce(ctx context.Context, entity *E, opts 
 	return err
 }
 
-func (r *baseRepository[E]) Inserts(ctx context.Context, entities []*E, opts ...QueryOptionFunc) error {
-	tx := r.db.WithContext(ctx)
+func (_self *baseRepository[E]) Inserts(ctx context.Context, entities []*E, opts ...QueryOptionFunc) error {
+	tx := _self.db.WithContext(ctx)
 	for _, opt := range opts {
 		tx = opt(tx)
 	}
@@ -62,8 +62,8 @@ func (r *baseRepository[E]) Inserts(ctx context.Context, entities []*E, opts ...
 	return err
 }
 
-func (r *baseRepository[E]) UpdateOnce(ctx context.Context, entity *E, opts ...QueryOptionFunc) error {
-	tx := r.db.WithContext(ctx)
+func (_self *baseRepository[E]) UpdateOnce(ctx context.Context, entity *E, opts ...QueryOptionFunc) error {
+	tx := _self.db.WithContext(ctx)
 	for _, opt := range opts {
 		tx = opt(tx)
 	}
@@ -71,8 +71,8 @@ func (r *baseRepository[E]) UpdateOnce(ctx context.Context, entity *E, opts ...Q
 	return err
 }
 
-func (r *baseRepository[E]) Updates(ctx context.Context, entities []*E, opts ...QueryOptionFunc) error {
-	tx := r.db.WithContext(ctx)
+func (_self *baseRepository[E]) Updates(ctx context.Context, entities []*E, opts ...QueryOptionFunc) error {
+	tx := _self.db.WithContext(ctx)
 	for _, opt := range opts {
 		tx = opt(tx)
 	}
@@ -80,8 +80,8 @@ func (r *baseRepository[E]) Updates(ctx context.Context, entities []*E, opts ...
 	return err
 }
 
-func (r *baseRepository[E]) DeleteOnce(ctx context.Context, entity *E, opts ...QueryOptionFunc) error {
-	tx := r.db.WithContext(ctx)
+func (_self *baseRepository[E]) DeleteOnce(ctx context.Context, entity *E, opts ...QueryOptionFunc) error {
+	tx := _self.db.WithContext(ctx)
 	for _, opt := range opts {
 		tx = opt(tx)
 	}
@@ -89,8 +89,8 @@ func (r *baseRepository[E]) DeleteOnce(ctx context.Context, entity *E, opts ...Q
 	return err
 }
 
-func (r *baseRepository[E]) DeleteById(ctx context.Context, entity *E, opts ...QueryOptionFunc) error {
-	tx := r.db.WithContext(ctx)
+func (_self *baseRepository[E]) DeleteById(ctx context.Context, entity *E, opts ...QueryOptionFunc) error {
+	tx := _self.db.WithContext(ctx)
 	for _, opt := range opts {
 		tx = opt(tx)
 	}
@@ -98,8 +98,8 @@ func (r *baseRepository[E]) DeleteById(ctx context.Context, entity *E, opts ...Q
 	return err
 }
 
-func (r *baseRepository[E]) Find(ctx context.Context, opts ...QueryOptionFunc) (*E, error) {
-	tx := r.db.WithContext(ctx)
+func (_self *baseRepository[E]) Find(ctx context.Context, opts ...QueryOptionFunc) (*E, error) {
+	tx := _self.db.WithContext(ctx)
 	for _, opt := range opts {
 		tx = opt(tx)
 	}
@@ -111,8 +111,8 @@ func (r *baseRepository[E]) Find(ctx context.Context, opts ...QueryOptionFunc) (
 	return entityData, nil
 }
 
-func (r *baseRepository[E]) Finds(ctx context.Context, opts ...QueryOptionFunc) ([]*E, error) {
-	tx := r.db.WithContext(ctx)
+func (_self *baseRepository[E]) Finds(ctx context.Context, opts ...QueryOptionFunc) ([]*E, error) {
+	tx := _self.db.WithContext(ctx)
 	for _, opt := range opts {
 		tx = opt(tx)
 	}
@@ -124,8 +124,8 @@ func (r *baseRepository[E]) Finds(ctx context.Context, opts ...QueryOptionFunc) 
 	return entities, nil
 }
 
-func (r *baseRepository[E]) CountOnce(ctx context.Context, opts ...QueryOptionFunc) (int64, error) {
-	tx := r.db.WithContext(ctx)
+func (_self *baseRepository[E]) CountOnce(ctx context.Context, opts ...QueryOptionFunc) (int64, error) {
+	tx := _self.db.WithContext(ctx)
 	for _, opt := range opts {
 		tx = opt(tx)
 	}
