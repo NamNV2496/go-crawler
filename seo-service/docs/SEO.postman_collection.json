@@ -1,0 +1,313 @@
+{
+	"info": {
+		"_postman_id": "0693d6f0-2a70-438e-bc4c-cf7d32db7230",
+		"name": "SEO",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "25126155"
+	},
+	"item": [
+		{
+			"name": "localhost:8080/api/v1/public/url?url=mua-ban",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/api/v1/public/url?url=mua-ban",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"public",
+						"url"
+					],
+					"query": [
+						{
+							"key": "url",
+							"value": "mua-ban"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localhost:8080/api/v1/public/url?url=mua-ban",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"page\": 1,\n    \"limit\": 20\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/api/v1/public/urls",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"public",
+						"urls"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localhost:8080/api/v1/public/url",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"url\": \"gl\",\n    \"name\": \"asdf\",\n    \"tittle\": \"asdf\",\n    \"description\": \"asdf\",\n    \"template\": \"asdf\",\n    \"prefix\": \"asf\",\n    \"suffix\": \"fads\",\n    \"metadata\": [\n        {\n            \"keyword\": \"hn\",\n            \"value\": \"ha-noi\"\n        }\n    ],\n    \"domain\": \"adfs\",\n    \"is_active\": true,\n    \"created_at\": \"0001-01-01T00:00:00Z\",\n    \"updated_at\": \"0001-01-01T00:00:00Z\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/api/v1/public/url",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"public",
+						"url"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localhost:8080/api/v1/public/url",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"url\": \"giao-luu-hn\",\n    \"name\": \"asdf\",\n    \"tittle\": \"asdf\",\n    \"description\": \"asdf\",\n    \"template\": \"asdf\",\n    \"prefix\": \"asf\",\n    \"suffix\": \"fads\",\n    \"metadata\": [\n        {\n            \"id\": 7,\n            \"url_id\": 14,\n            \"keyword\": \"HN\",\n            \"value\": \"ha-noi\"\n        },\n        {\n            \"url_id\": 14,\n            \"keyword\": \"BG\",\n            \"value\": \"bac-giang\"\n        }\n    ],\n    \"domain\": \"adfs\",\n    \"is_active\": true\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/api/v1/public/url/14",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"public",
+						"url",
+						"14"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localhost:8080/api/v1/public/url/parse",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"url\": \"chung-cu/mua-ban\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/api/v1/public/url/parse",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"public",
+						"url",
+						"parse"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localhost:8080/api/v1/public/url/build",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"type\": \"regex\", // template, regex, openai\n    \"kind\": \"trao-doi\",\n    \"city\": \"ha-noi\",\n    \"category\": \"dien-thoai\",\n    \"product\": \"iphone\",\n    \"brand\": \"apple\",\n    \"year\": \"2025\",\n    \"month\": \"06\"\n}\n\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/api/v1/public/url/build",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"public",
+						"url",
+						"build"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localhost:8080/api/v1/public/url/build tea",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"kind\": \"ban\",\n    \"city\": \"ha-noi\",\n    \"category\": \"tea\"\n    // \"product\": \"iphone\",\n    // \"brand\": \"apple\",\n    // \"year\": \"2025\",\n    // \"month\": \"06\"\n}\n\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/api/v1/public/url/build",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"public",
+						"url",
+						"build"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localhost:8080/api/v1/public/url/dynamic_keyword",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"kind\": \"ban\",\n    \"city\": \"ha-noi\",\n    \"category\": \"tea\",\n    \"product\": \"tra-duong-nhan\",\n    \"brand\": \"tra-tam-thao\"\n    // \"year\": \"2025\",\n    // \"month\": \"06\"\n}\n\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/api/v1/public/url/dynamic_keyword",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"public",
+						"url",
+						"dynamic_keyword"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localhost:8080/api/v1/public/url/dynamic_keyword phone",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"kind\": \"ban\",\n    \"city\": \"ha-noi\",\n    \"category\": \"dien-thoai\",\n    \"product\": \"iphone\",\n    \"brand\": \"apple\",\n    \"year\": \"2025\",\n    \"month\": \"06\"\n}\n\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/api/v1/public/url/dynamic_keyword",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"public",
+						"url",
+						"dynamic_keyword"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
