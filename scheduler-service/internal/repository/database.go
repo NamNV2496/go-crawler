@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/namnv2496/crawler/internal/configs"
+	"github.com/namnv2496/scheduler/internal/configs"
+	"github.com/namnv2496/scheduler/internal/domain"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -21,14 +22,13 @@ type Database struct {
 func NewDatabase(
 	config *configs.Config,
 ) (*Database, error) {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s search_path=%s",
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
 		config.DatabaseConfig.Host,
 		config.DatabaseConfig.User,
 		config.DatabaseConfig.Password,
 		config.DatabaseConfig.DBName,
 		config.DatabaseConfig.Port,
 		config.DatabaseConfig.SSLMode,
-		config.DatabaseConfig.Schema,
 	)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
@@ -45,6 +45,7 @@ func NewDatabase(
 	// Set connection pool settings
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
+	db.AutoMigrate(&domain.CrawlerEvent{})
 	return &Database{db: db}, nil
 }
 

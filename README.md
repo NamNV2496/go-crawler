@@ -1,18 +1,18 @@
 # Web Crawler
 
-A simple web crawler written in Go that crawls websites and extracts information.
+A simple Job scheduler + web crawler written in Go that crawls websites and extracts information.
 
 ## Main Features
 
+- Add and manage event (in this case is crawler event)
 - Crawls web pages starting from a given URL with method GET, POST and CURL
 - Manage multiple queue with priority for crawlers
-- Run by cron job
 - Send message to Telegram
 
 ## Technologies
 
 ```
-- Go: 1.23.4
+- Go: 1.24
 - Redis: 7-alpine
 - Kafka: 3.7.1
 - PostgreSQL: 17
@@ -20,9 +20,10 @@ A simple web crawler written in Go that crawls websites and extracts information
 - Ratelimit: "github.com/go-redis/redis_rate/v9"
 - Cron job: "github.com/robfig/cron/v3"
 - Gorm: "gorm.io/gorm"
+- redisLock: "github.com/go-redsync/redsync/v4"
 ```
 
-# Architecture level 1 (tag-v1)
+# Architecture level 1 (branch: v1)
 
 Is basic crawler 
 
@@ -47,37 +48,30 @@ flowchart LR
 ```txt
 title Crawler
 sequenceDiagram
-    participant cron-job
-    participant crawler-service
-    participant url-DB
+    participant scheduler-service
+    participant DB
     participant Kafka
-    participant crawler-worker
+    participant crawler-service-woker
     participant result-DB
 
-    cron-job ->> cron-job: normal queue run every 5m
-    cron-job ->> cron-job: priority queue run every 15m
-    cron-job ->> crawler-service: trigger to get job
-    crawler-service ->> url-DB: GetUrlByDomainsAndQueues
-    crawler-service <-- url-DB: get urls
-    crawler-service ->> Kafka: public message to queue by topic
-    Kafka -->> crawler-worker: consume message
-    crawler-worker ->> crawler-worker: crawl by url
-    crawler-worker ->> result-DB: write data to result DB
+    scheduler-service ->> scheduler-service: normal queue run every 1m
+    scheduler-service ->> DB: get list of events
+    scheduler-service ->> Kafka: public event
+    crawler-service-woker -->> Kafka: consume message
+    
+    crawler-service-woker ->> crawler-service-woker: execute event
+    crawler-service-woker ->> result-DB: write data to result DB
 ```
 </details>
 
 ![alt text](docs/sequence.png)
 
-# Architecture level 2 (tag-v2)
+# Architecture level 2 (branch: v2)
 
 In Architecture level 1, we only query and execute 1 time. Let expand the problem with harder question
 - Can we execute for daily, monthly job?
 - As current we run sequencely job because a job is quite short response. What happend if long running job? example: download a large file, run a large step. => How to handle it? And in running time of that job, can we run another job?
 - In actually, crawler include scheduler problem => split to scheduler + crawler
-
-
-
-
 
 # How to run
 
@@ -89,18 +83,20 @@ docker-compose up -d
 ```
 
 ```bash
-cd crawler-service
-
 # Terminal 1
-go run main.go server
-
-make service
-
-
-# Terminal 2
+cd crawler-service
 go run main.go crawler-worker
 
-make worker
+# Terminal 2
+
+cd scheduler-service
+go run main.go server
+
+# Terminal 3
+
+cd scheduler-service
+go run main.go scheduler_worker
+
 ```
 
 <details>

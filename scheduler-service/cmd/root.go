@@ -6,6 +6,7 @@ func Execute() error {
 	rootCmd := &cobra.Command{
 		Short: "A simple web crawler",
 	}
-	rootCmd.AddCommand(CrawlerWorkerCmd)
+	rootCmd.AddCommand(serverCmd)
+	rootCmd.AddCommand(schedulerWorkerCmd)
 	return rootCmd.Execute()
 }

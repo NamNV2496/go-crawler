@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package crawler.v1;
+
+import "google/api/annotations.proto";
+
+message CrawlerEvent {
+    string id = 1;
+    string url = 2;
+    string method = 3;
+    string description = 4;
+    string queue = 5;
+    string domain = 6;
+    bool is_active = 7;
+    int64 next_run_time = 8;
+    int64 repeat_times = 9;
+    int64 scheduler_at = 10;
+    string status = 11;
+    string cron_exp = 12;
+    string created_at = 13;
+    string updated_at = 14;
+}
+
+message CreateCrawlerEventRequest {
+	CrawlerEvent event = 1;
+}
+message CreateCrawlerEventResponse {
+	string id = 1;
+    string status = 2;
+}
+message GetCrawlerEventsRequest {
+    int32 limit = 1;
+    int32 offset = 2;
+}
+message GetCrawlerEventsResponse {
+    repeated CrawlerEvent events = 1;
+}
+
+message UpdateCrawlerEventRequest {
+    string id = 1;
+    CrawlerEvent event = 2;
+}
+message UpdateCrawlerEventResponse {
+    string id = 1;
+    string status = 2;
+}
+
+message UpdateEventStatusRequest {
+    int64 id = 1;
+    string status = 2;
+}
+message UpdateEventStatusResponse {
+    string status = 1;
+}
+
+service CrawlerEventService {
+    rpc CreateCrawlerEvent(CreateCrawlerEventRequest) returns (CreateCrawlerEventResponse) {
+        option (google.api.http) = {
+			post: "/api/v1/event"
+            body: "*"
+		};
+    }
+    rpc GetCrawlerEvents(GetCrawlerEventsRequest) returns (GetCrawlerEventsResponse) {
+        option (google.api.http) = {
+			get: "/api/v1/events"
+		};
+    }
+    rpc UpdateCrawlerEvent(UpdateCrawlerEventRequest) returns (UpdateCrawlerEventResponse) {
+        option (google.api.http) = {
+			put: "/api/v1/events/{id}"
+            body: "*"
+		};
+    }
+    rpc UpdateEventStatus(UpdateEventStatusRequest) returns (UpdateEventStatusResponse) {
+        option (google.api.http) = {
+			post: "/api/v1/events/status"
+            body: "*"
+		};
+    }
+}

@@ -26,13 +26,16 @@ type DatabaseConfig struct {
 	Password string `env:"db_password" envDefault:"root"`
 	DBName   string `env:"db_name" envDefault:"postgres"`
 	SSLMode  string `env:"db_ssl_mode" envDefault:"disable"`
-	Schema   string `env:"SCHEMA" envDefault:"public"`
 }
 
 type Redis struct {
 	Addr     string `env:"redis_addr" envDefault:"localhost:6379"`
 	Password string `env:"redis_password" envDefault:""`
 	DB       int    `env:"redis_db" envDefault:"0"`
+}
+
+type Cron struct {
+	CronExpression string `env:"CRON_EXPRESSION" envDefault:"*/1 * * * *"`
 }
 
 type Telegram struct {
@@ -47,6 +50,7 @@ type Config struct {
 	KafkaProducerConfig KafkaProducerConfig
 	KafkaConsumerConfig KafkaConsumerConfig
 	DatabaseConfig      DatabaseConfig
+	Cron                Cron
 	Telegram            Telegram
 	Redis               Redis
 }

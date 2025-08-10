@@ -7,45 +7,7 @@
 	},
 	"item": [
 		{
-			"name": "localhost:8080/api/v1/urls?offset=0&limit=20",
-			"request": {
-				"auth": {
-					"type": "noauth"
-				},
-				"method": "GET",
-				"header": [
-					{
-						"key": "accept",
-						"value": "application/json"
-					}
-				],
-				"url": {
-					"raw": "localhost:8080/api/v1/urls?offset=0&limit=20",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"api",
-						"v1",
-						"urls"
-					],
-					"query": [
-						{
-							"key": "offset",
-							"value": "0"
-						},
-						{
-							"key": "limit",
-							"value": "20"
-						}
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "localhost:8080/api/v1/urls?limit=20&offset=0",
+			"name": "localhost:8080/api/v1/event",
 			"request": {
 				"auth": {
 					"type": "noauth"
@@ -59,7 +21,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"url\": {\n        \"url\": \"curl -L 'https://m.cafef.vn/du-lieu/Ajax/ajaxgoldprice.ashx?index=11' -H 'Accept: */*' -H 'Accept-Language: en-US,en;q=0.9,vi;q=0.8' -H 'Connection: keep-alive' -H 'Referer: https://m.cafef.vn/du-lieu/gia-vang-hom-nay/trong-nuoc.chn' -H 'Sec-Fetch-Dest: empty' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Site: same-origin' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0' -H 'sec-ch-ua: \\\"Microsoft Edge\\\";v=\\\"135\\\", \\\"Not-A.Brand\\\";v=\\\"8\\\", \\\"Chromium\\\";v=\\\"135\\\"' -H 'sec-ch-ua-mobile: ?0' -H 'sec-ch-ua-platform: \\\"macOS\\\"' -H 'Cookie: _ga=GA1.2.1174992577.1733489327; _ga_860L8F5EZP=GS1.1.1740282133.10.0.1740282328.0.0.0; ASP.NET_SessionId=wnors2tpgmcb0lwvqwebtsf5; favorite_stocks_state=1'\",\n        \"method\": \"CURL\",\n        \"description\": \"lấy giá vàng từ cafe type 1\",\n        \"queue\": \"normal\",\n        \"domain\": \"gold\",\n        \"isActive\": true\n    }\n}",
+					"raw": "{\n    \"event\": {\n        \"url\": \"curl -L 'https://m.cafef.vn/du-lieu/Ajax/ajaxgoldprice.ashx?index=11' -H 'Accept: */*' -H 'Accept-Language: en-US,en;q=0.9,vi;q=0.8' -H 'Connection: keep-alive' -H 'Referer: https://m.cafef.vn/du-lieu/gia-vang-hom-nay/trong-nuoc.chn' -H 'Sec-Fetch-Dest: empty' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Site: same-origin' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0' -H 'sec-ch-ua: \\\"Microsoft Edge\\\";v=\\\"135\\\", \\\"Not-A.Brand\\\";v=\\\"8\\\", \\\"Chromium\\\";v=\\\"135\\\"' -H 'sec-ch-ua-mobile: ?0' -H 'sec-ch-ua-platform: \\\"macOS\\\"' -H 'Cookie: _ga=GA1.2.1174992577.1733489327; _ga_860L8F5EZP=GS1.1.1740282133.10.0.1740282328.0.0.0; ASP.NET_SessionId=wnors2tpgmcb0lwvqwebtsf5; favorite_stocks_state=1'\",\n        \"method\": \"CURL\",\n        \"description\": \"lấy giá vàng từ cafe type 1\",\n        \"queue\": \"normal\",\n        \"domain\": \"gold\",\n        \"isActive\": true,\n        \"scheduler_at\": 1754823629000,\n        \"next_run_time\": 120000,\n        \"repeat_times\":100000,\n        \"cron_exp\": \"*/1 * * * *\"\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -67,7 +29,7 @@
 					}
 				},
 				"url": {
-					"raw": "localhost:8080/api/v1/url",
+					"raw": "localhost:8080/api/v1/event",
 					"host": [
 						"localhost"
 					],
@@ -75,14 +37,52 @@
 					"path": [
 						"api",
 						"v1",
-						"url"
+						"event"
 					]
 				}
 			},
 			"response": []
 		},
 		{
-			"name": "localhost:8080/api/v1/queue?limit=20&offset=0",
+			"name": "localhost:8080/api/v1/events/{event_id}",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"event\": {\n        \"id\": \"12\",\n        \"url\": \"curl -L 'https://m.cafef.vn/du-lieu/Ajax/ajaxgoldprice.ashx?index=11' -H 'Accept: */*' -H 'Accept-Language: en-US,en;q=0.9,vi;q=0.8' -H 'Connection: keep-alive' -H 'Referer: https://m.cafef.vn/du-lieu/gia-vang-hom-nay/trong-nuoc.chn' -H 'Sec-Fetch-Dest: empty' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Site: same-origin' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0' -H 'sec-ch-ua: \\\"Microsoft Edge\\\";v=\\\"135\\\", \\\"Not-A.Brand\\\";v=\\\"8\\\", \\\"Chromium\\\";v=\\\"135\\\"' -H 'sec-ch-ua-mobile: ?0' -H 'sec-ch-ua-platform: \\\"macOS\\\"' -H 'Cookie: _ga=GA1.2.1174992577.1733489327; _ga_860L8F5EZP=GS1.1.1740282133.10.0.1740282328.0.0.0; ASP.NET_SessionId=wnors2tpgmcb0lwvqwebtsf5; favorite_stocks_state=1'\",\n        \"method\": \"CURL\",\n        \"description\": \"lấy giá vàng từ cafe type 1\",\n        \"queue\": \"normal\",\n        \"domain\": \"gold\",\n        \"isActive\": false,\n        \"next_run_time\": \"1754824529000\",\n        \"repeat_times\": \"100000\",\n        \"scheduler_at\": \"1754824529000\",\n        \"status\": \"\",\n        \"cronExp\": \"*/1 * * * *\"\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/api/v1/events/12",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"events",
+						"12"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localhost:8080/api/v1/events?offset=0&limit=20",
 			"request": {
 				"auth": {
 					"type": "noauth"
@@ -95,7 +95,7 @@
 					}
 				],
 				"url": {
-					"raw": "localhost:8080/api/v1/queue?limit=20&offset=0",
+					"raw": "localhost:8080/api/v1/events?offset=0&limit=20",
 					"host": [
 						"localhost"
 					],
@@ -103,16 +103,16 @@
 					"path": [
 						"api",
 						"v1",
-						"queue"
+						"events"
 					],
 					"query": [
 						{
-							"key": "limit",
-							"value": "20"
-						},
-						{
 							"key": "offset",
 							"value": "0"
+						},
+						{
+							"key": "limit",
+							"value": "20"
 						}
 					]
 				}
@@ -120,16 +120,13 @@
 			"response": []
 		},
 		{
-			"name": "localhost:8080/api/v1/queue",
+			"name": "http://localhost:8080/api/v1/events/status",
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
 				"method": "POST",
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"queue\": {\n        \"queue\": \"high-priority\",\n        \"domain\": \"gold\",\n        \"cron\": \"5m\",\n        \"quantity\": \"10\",\n        \"isActive\": true\n    }\n}",
+					"raw": "{\n    \"id\": 11,\n    \"status\": \"successed\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -137,7 +134,8 @@
 					}
 				},
 				"url": {
-					"raw": "localhost:8080/api/v1/queue",
+					"raw": "http://localhost:8080/api/v1/events/status",
+					"protocol": "http",
 					"host": [
 						"localhost"
 					],
@@ -145,7 +143,8 @@
 					"path": [
 						"api",
 						"v1",
-						"queue"
+						"events",
+						"status"
 					]
 				}
 			},

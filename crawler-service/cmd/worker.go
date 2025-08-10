@@ -34,6 +34,7 @@ func InvokeCrawlerWorker(invokers ...any) *fx.App {
 		fx.StopTimeout(time.Second*10),
 		fx.Provide(
 			fx.Annotate(mq.NewKafkaConsumer, fx.As(new(mq.IConsumer))),
+			// fx.Annotate(mq.NewKafkaProducer, fx.As(new(mq.IProducer))), // for public result event after
 			fx.Annotate(service.NewCrawlerService, fx.As(new(service.ICrawlerService))),
 			fx.Annotate(service.NewTeleService, fx.As(new(service.ITeleService))),
 			fx.Annotate(repository.NewDatabase, fx.As(new(repository.IDatabase))),
@@ -78,7 +79,7 @@ func startConsumer(
 					if err != nil {
 						return
 					}
-					var url entity.Url
+					var url entity.CrawlerEvent
 					if err := json.Unmarshal(m.Value, &url); err != nil {
 						return
 					}
@@ -100,7 +101,7 @@ func startTest(
 	crawlerService service.ICrawlerService,
 ) {
 	ctx := context.Background()
-	url := entity.Url{
+	url := entity.CrawlerEvent{
 		Id:       1,
 		Url:      "https://cellphones.com.vn/robots.txt",
 		Method:   "ROBOTS",

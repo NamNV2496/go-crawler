@@ -24,7 +24,7 @@ const (
 )
 
 type ICrawlerService interface {
-	Crawl(ctx context.Context, url entity.Url) error
+	Crawl(ctx context.Context, url entity.CrawlerEvent) error
 }
 
 type CrawlerService struct {
@@ -54,7 +54,7 @@ func NewCrawlerService(
 }
 
 // Crawl starts crawling from the given URL up to the maximum depth
-func (_self *CrawlerService) Crawl(ctx context.Context, url entity.Url) error {
+func (_self *CrawlerService) Crawl(ctx context.Context, url entity.CrawlerEvent) error {
 	if !url.IsActive {
 		return nil
 	}
@@ -65,7 +65,7 @@ func (_self *CrawlerService) Crawl(ctx context.Context, url entity.Url) error {
 	return nil
 }
 
-func (_self *CrawlerService) crawlPage(ctx context.Context, url entity.Url, depth int) error {
+func (_self *CrawlerService) crawlPage(ctx context.Context, url entity.CrawlerEvent, depth int) error {
 	if depth > _self.maxDepth {
 		return nil
 	}
@@ -89,10 +89,23 @@ func (_self *CrawlerService) crawlPage(ctx context.Context, url entity.Url, dept
 		return fmt.Errorf("unsupported HTTP method: %s", url.Method)
 	}
 
+	// update status
+	go func() {
+		reqBody := fmt.Sprintf(`{"id":%d,"status":"successed"}`, url.Id)
+		resp, err := http.Post("http://localhost:8080/api/v1/event/status", "application/json", strings.NewReader(reqBody))
+		if err != nil {
+			log.Printf("failed to update status: %v", err)
+			return
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			log.Printf("status update returned non-200: %d", resp.StatusCode)
+		}
+	}()
 	return nil
 }
 
-func (_self *CrawlerService) crawlRobotFile(ctx context.Context, url entity.Url, depth int) (string, error) {
+func (_self *CrawlerService) crawlRobotFile(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
 	if !isValidURL(url.Url) {
 		return "", nil
 	}
@@ -117,7 +130,7 @@ func (_self *CrawlerService) crawlRobotFile(ctx context.Context, url entity.Url,
 	return "", nil
 }
 
-func (_self *CrawlerService) crawlGET(ctx context.Context, url entity.Url, depth int) (string, error) {
+func (_self *CrawlerService) crawlGET(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
 	if !isValidURL(url.Url) {
 		return "", nil
 	}
@@ -140,7 +153,7 @@ func (_self *CrawlerService) crawlGET(ctx context.Context, url entity.Url, depth
 	return doc.Data, nil
 }
 
-func (_self *CrawlerService) crawlPOST(ctx context.Context, url entity.Url, depth int) (string, error) {
+func (_self *CrawlerService) crawlPOST(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
 	if !isValidURL(url.Url) {
 		return "", nil
 	}
@@ -163,7 +176,7 @@ func (_self *CrawlerService) crawlPOST(ctx context.Context, url entity.Url, dept
 	return doc.Data, nil
 }
 
-func (_self *CrawlerService) crawlCurl(ctx context.Context, url entity.Url, depth int) (string, error) {
+func (_self *CrawlerService) crawlCurl(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
 	// Parse the curl command string
 	parts := strings.Split(url.Url, "--")
 	var args []string
