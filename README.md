@@ -41,6 +41,16 @@ flowchart LR
     worker[worker<br>ratelimiter] -- update statue --> urlservice
 ```
 
+![alt text](docs/design1.png)
+
+# Architecture level 2 (branch: v2)
+
+In Architecture level 1, we only query and execute 1 time. Let expand the problem with harder question
+- Can we execute for daily, monthly job?
+- As current we run sequencely job because a job is quite short response. What happend if long running job? example: download a large file, run a large step. => How to handle it? And in running time of that job, can we run another job?
+- In actually, crawler include scheduler problem => split to scheduler + crawler
+
+
 ![alt text](docs/design.png)
 
 <details>
@@ -65,13 +75,6 @@ sequenceDiagram
 </details>
 
 ![alt text](docs/sequence.png)
-
-# Architecture level 2 (branch: v2)
-
-In Architecture level 1, we only query and execute 1 time. Let expand the problem with harder question
-- Can we execute for daily, monthly job?
-- As current we run sequencely job because a job is quite short response. What happend if long running job? example: download a large file, run a large step. => How to handle it? And in running time of that job, can we run another job?
-- In actually, crawler include scheduler problem => split to scheduler + crawler
 
 # How to run
 
