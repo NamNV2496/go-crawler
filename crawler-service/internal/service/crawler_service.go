@@ -105,7 +105,7 @@ func (_self *CrawlerService) crawlPage(ctx context.Context, url entity.CrawlerEv
 	return nil
 }
 
-func (_self *CrawlerService) crawlRobotFile(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
+func (_self *CrawlerService) crawlRobotFile(_ context.Context, url entity.CrawlerEvent, depth int) (string, error) {
 	if !isValidURL(url.Url) {
 		return "", nil
 	}

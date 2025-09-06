@@ -23,7 +23,7 @@ A simple Job scheduler + web crawler written in Go that crawls websites and extr
 - redisLock: "github.com/go-redsync/redsync/v4"
 ```
 
-# Architecture level 1 (branch: v1)
+# Architecture level 1 (branch: v1) [BASIC]
 
 Is basic crawler 
 
@@ -43,13 +43,14 @@ flowchart LR
 
 ![alt text](docs/design1.png)
 
-# Architecture level 2 (branch: v2)
+# Architecture level 2 (branch: v2) [FINAL]
 
 In Architecture level 1, we only query and execute 1 time. Let expand the problem with harder question
 - Can we execute for daily, monthly job?
 - As current we run sequencely job because a job is quite short response. What happend if long running job? example: download a large file, run a large step. => How to handle it? And in running time of that job, can we run another job?
 - In actually, crawler include scheduler problem => split to scheduler + crawler
 
+# FINAL DESIGN
 
 ![alt text](docs/design.png)
 
@@ -93,7 +94,7 @@ go run main.go crawler-worker
 # Terminal 2
 
 cd scheduler-service
-go run main.go server
+go run main.go scheduler
 
 # Terminal 3
 
