@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/hashstructure/v2"
@@ -60,4 +62,35 @@ func (_self CrawlerEvent) Decr(ctx context.Context, key any) *redis.IntCmd {
 
 func (_self CrawlerEvent) Expire(ctx context.Context, key any, expiredTime time.Duration) error {
 	return nil
+}
+
+func (c CrawlerEvent) ToMap() map[string]string {
+	result := make(map[string]string)
+	val := reflect.ValueOf(c)
+	typ := val.Type()
+
+	for i := 0; i < val.NumField(); i++ {
+		field := val.Field(i)
+		fieldType := typ.Field(i)
+
+		// Get the json tag name
+		jsonTag := fieldType.Tag.Get("json")
+		if jsonTag == "" {
+			continue
+		}
+		paramName := strings.Split(jsonTag, ",")[0]
+		if field.Kind() == reflect.Struct || field.Kind() == reflect.Slice {
+			continue
+		}
+		if field.Kind() == reflect.Ptr {
+			if field.IsNil() {
+				result[paramName] = ""
+			} else {
+				result[paramName] = fmt.Sprintf("%v", field.Elem().Interface())
+			}
+		} else {
+			result[paramName] = fmt.Sprintf("%v", field.Interface())
+		}
+	}
+	return result
 }

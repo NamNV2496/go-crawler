@@ -14,6 +14,7 @@ import (
 	"github.com/namnv2496/scheduler/internal/controller"
 	"github.com/namnv2496/scheduler/internal/repository"
 	"github.com/namnv2496/scheduler/internal/service"
+	internalvalidator "github.com/namnv2496/scheduler/internal/validator"
 	crawlerv1 "github.com/namnv2496/scheduler/pkg/generated/pkg/proto"
 	"github.com/namnv2496/scheduler/pkg/utils"
 	"github.com/spf13/cobra"
@@ -46,6 +47,7 @@ func InvokeServer(invokers ...any) *fx.App {
 			fx.Annotate(controller.NewCrawlerEventController, fx.As(new(crawlerv1.CrawlerEventServiceServer))),
 
 			fx.Annotate(startRateLimit, fx.As(new(utils.IRateLimit))),
+			fx.Annotate(internalvalidator.NewValidate, fx.As(new(internalvalidator.IValidate))),
 		),
 		fx.Supply(
 			config,

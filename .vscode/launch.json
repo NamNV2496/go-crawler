@@ -12,9 +12,9 @@
             "mode": "auto",
             "program": "${workspaceFolder}/scheduler-service/main.go",
             // "program": "${workspaceFolder}/crawler-service/main.go",
-            "args": ["scheduler_worker"]
+            // "args": ["scheduler_worker"]
             // "args": ["crawler-worker"]
-            // "args": ["server"]
+            "args": ["scheduler"]
         }
     ]
 }

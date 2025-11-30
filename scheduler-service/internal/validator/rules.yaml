@@ -1,0 +1,16 @@
+{
+  "url": {
+    "min_length": 2,
+    "max_length": 1000
+  },
+  "description": {
+    "min_length": 2,
+    "max_length": 1000,
+    "min_word": 5,
+    "max_word": 100
+  },
+  "repeat_times": {
+    "max_value": 100,
+    "min_value": 2
+  }
+}

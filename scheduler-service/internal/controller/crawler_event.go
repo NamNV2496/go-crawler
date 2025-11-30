@@ -11,6 +11,7 @@ import (
 	"github.com/namnv2496/scheduler/internal/domain"
 	"github.com/namnv2496/scheduler/internal/entity"
 	"github.com/namnv2496/scheduler/internal/service"
+	internalvalidator "github.com/namnv2496/scheduler/internal/validator"
 
 	// Import service
 
@@ -24,15 +25,18 @@ type CrawlerEventController struct {
 	crawlerv1.UnimplementedCrawlerEventServiceServer
 	crawlerEventService service.ICrawlerEventService
 	ratelimter          utils.IRateLimit
+	internalvalidator   internalvalidator.IValidate
 }
 
 func NewCrawlerEventController(
 	crawlerEventService service.ICrawlerEventService,
 	ratelimter utils.IRateLimit,
+	internalvalidator internalvalidator.IValidate,
 ) crawlerv1.CrawlerEventServiceServer {
 	return &CrawlerEventController{
 		crawlerEventService: crawlerEventService,
 		ratelimter:          ratelimter,
+		internalvalidator:   internalvalidator,
 	}
 }
 
@@ -40,10 +44,11 @@ func (_self *CrawlerEventController) CreateCrawlerEvent(
 	ctx context.Context,
 	req *crawlerv1.CreateCrawlerEventRequest,
 ) (*crawlerv1.CreateCrawlerEventResponse, error) {
-	// rate limit
-	if err := _self.checkInserRateLimit(ctx, req.Event.Id); err != nil {
-		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %v", err)
-	}
+
+	// // rate limit
+	// if err := _self.checkInserRateLimit(ctx, req.Event.Id); err != nil {
+	// 	return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %v", err)
+	// }
 
 	if req == nil || req.Event == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request or url is nil")
@@ -64,13 +69,21 @@ func (_self *CrawlerEventController) CreateCrawlerEvent(
 		UpdatedAt:   time.Now(),
 	}
 
-	id, err := _self.crawlerEventService.CreateCrawlerEvent(ctx, newEvent)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create url: %v", err)
+	if err := _self.internalvalidator.ValidateRequire(ctx, "insert", newEvent); err != nil {
+		return nil, err
 	}
 
+	if err := _self.internalvalidator.ValidateValue(ctx, newEvent); err != nil {
+		return nil, err
+	}
+	// id, err := _self.crawlerEventService.CreateCrawlerEvent(ctx, newEvent)
+	// if err != nil {
+	// 	return nil, status.Errorf(codes.Internal, "failed to create url: %v", err)
+	// }
+
 	return &crawlerv1.CreateCrawlerEventResponse{
-		Id:     strconv.FormatInt(id, 10),
+		// Id:     strconv.FormatInt(id, 10),
+		Id:     "12",
 		Status: "created",
 	}, nil
 }

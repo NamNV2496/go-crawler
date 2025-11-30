@@ -1,0 +1,51 @@
+{
+  "insert": {
+    "url": {
+      "require": "1"
+    },
+    "method": {
+      "require": "1"
+    },
+    "description": {
+      "require": "1"
+    },
+    "scheduler_at": {
+      "url": "1"
+    },
+    "repeat_times": {
+      "url": "1"
+    },
+    "cron_exp": {
+      "method": "GET"
+    },
+    "next_run_time": {
+      "url": "1"
+    }
+  },
+  "edit": {
+    "url": {
+      "require": "1"
+    },
+    "method": {
+      "require": "1"
+    },
+    "queue": {
+      "require": "1"
+    },
+    "description": {
+      "require": "0"
+    },
+    "scheduler_at": {
+      "url": "1"
+    },
+    "repeat_times": {
+      "url": "1"
+    },
+    "cron_exp": {
+      "url": "1"
+    },
+    "next_run_time": {
+      "url": "1"
+    }
+  }
+}
