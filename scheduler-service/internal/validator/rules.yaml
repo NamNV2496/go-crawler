@@ -1,15 +1,18 @@
 {
   "url": {
+    "label": "Đường dẫn",
     "min_length": 2,
-    "max_length": 1000
+    "max_length": 50
   },
   "description": {
+    "label": "Mô tả",
     "min_length": 2,
     "max_length": 1000,
     "min_word": 5,
     "max_word": 100
   },
   "repeat_times": {
+    "label": "Số lần lặp",
     "max_value": 100,
     "min_value": 2
   }

@@ -154,7 +154,7 @@ func validateValueField(eventMap map[string]string, paramName string, valueCondi
 				return err
 			}
 			if value < valueCondition.MinValue {
-				return fmt.Errorf("%s is required >= %d", paramName, valueCondition.MinValue)
+				return fmt.Errorf("\"%s\" is required >= %d", valueCondition.Label, valueCondition.MinValue)
 			}
 		}
 	}
@@ -165,21 +165,21 @@ func validateValueField(eventMap map[string]string, paramName string, valueCondi
 				return err
 			}
 			if value > valueCondition.MaxValue {
-				return fmt.Errorf("%s is required <= %d", paramName, valueCondition.MaxValue)
+				return fmt.Errorf("\"%s\" is required <= %d", valueCondition.Label, valueCondition.MaxValue)
 			}
 		}
 	}
 	if valueCondition.MinLength > 0 {
 		if inputValue != "" {
 			if len(inputValue) < valueCondition.MinLength {
-				return fmt.Errorf("%s is required >= %d characters", paramName, valueCondition.MinLength)
+				return fmt.Errorf("\"%s\" is required >= %d characters", valueCondition.Label, valueCondition.MinLength)
 			}
 		}
 	}
 	if valueCondition.MaxLength > 0 {
 		if inputValue != "" {
 			if len(inputValue) > valueCondition.MaxLength {
-				return fmt.Errorf("%s is required <= %d characters", paramName, valueCondition.MaxLength)
+				return fmt.Errorf("\"%s\" is required <= %d characters", valueCondition.Label, valueCondition.MaxLength)
 			}
 		}
 	}
@@ -187,7 +187,7 @@ func validateValueField(eventMap map[string]string, paramName string, valueCondi
 		if inputValue != "" {
 			words := strings.Fields(inputValue)
 			if int(len(words)) < valueCondition.MinWord {
-				return fmt.Errorf("%s is required >= %d words", paramName, valueCondition.MinWord)
+				return fmt.Errorf("\"%s\" is required >= %d words", valueCondition.Label, valueCondition.MinWord)
 			}
 
 		}

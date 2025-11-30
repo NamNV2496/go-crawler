@@ -8,7 +8,7 @@ A simple Job scheduler + web crawler written in Go that crawls websites and extr
 - Crawls web pages starting from a given URL with method GET, POST and CURL
 - Manage multiple queue with priority for crawlers
 - Send message to Telegram
-- Validator input data: handle dynamic by config base on different action
+- Validator input data: handle dynamic by config base on different action config in yaml files to control require data or value range in `validator.go`
 
 ## Technologies
 
@@ -179,7 +179,7 @@ publish to crawler queue: normal, request: curl --location 'https://m.cafef.vn/d
         "repeat_times": "92953379", // invalid value with rule: "max_value": 100, "min_value": 2
         "created_at": "eu sit",
 
-        "description": "eu ea dolore",
+        "description": "eu ea dolore ádf à à",
         "domain": "officia do Lorem Ut non",
         "id": "irure mollit in deserunt adipisicing",
         "is_active": true,
@@ -191,10 +191,10 @@ publish to crawler queue: normal, request: curl --location 'https://m.cafef.vn/d
         "url": "quis voluptate"
     }
 }
-# output: repeat_times is required <= 100
+# output: "Số lần lặp" is required <= 100
 
 # invalid number of words relate min/max value
-{
+
 {
     "event": {
         "description": "eu ea dolore", // min word is 5
@@ -212,11 +212,11 @@ publish to crawler queue: normal, request: curl --location 'https://m.cafef.vn/d
         "url": "quis voluptate"
     }
 }
-# output: description is required >= 5 words
+# output: "Mô tả" is required >= 5 words
 
 # invalid length of string relate min/max value
 {
-    "event": 
+    "event": {
         "url": "q", // min length is 2
 
         "description": "eu ea dolore asfa ads fa",
@@ -233,7 +233,27 @@ publish to crawler queue: normal, request: curl --location 'https://m.cafef.vn/d
     }
 }
 
-# output: url is required >= 2 characters
+# output: "Đường dẫn" is required >= 2 characters
+
+# invalid length of string relate min/max value
+{
+    "event": {
+        "url": "qádfasdfjkasdfj;klasfjlkfjalksfjjadls;kfjkladfsjdlsakfjdlkdsajfl;ạdsladsjl;kadsjadsl;fjd", // max length is 50
+
+        "description": "eu ea dolore asfa ads fa",
+        "repeat_times": "100",
+        "created_at": "eu sit",
+        "domain": "officia do Lorem Ut non",
+        "id": "irure mollit in deserunt adipisicing",
+        "is_active": true,
+        "method": "POST",
+        "next_run_time": "84436197",
+        "queue": "reprehenderit",
+        "status": "mollit nostrud aute ut",
+        "updated_at": "minim dolore quis esse cupidatat"
+    }
+}
+# output: "Đường dẫn" is required <= 50 characters
 ```
 
 
