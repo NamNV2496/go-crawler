@@ -1,7 +1,7 @@
 {
   "insert": {
     "url": {
-      "require": "1"
+      "require": "1" # always require
     },
     "method": {
       "require": "1"
@@ -16,7 +16,7 @@
       "url": "1"
     },
     "cron_exp": {
-      "method": "GET"
+      "method": "GET" # require when match condition value of `method is GET`
     },
     "next_run_time": {
       "url": "1"
@@ -33,7 +33,7 @@
       "require": "1"
     },
     "description": {
-      "require": "0"
+      "require": "0" # always NOT require
     },
     "scheduler_at": {
       "url": "1"
@@ -42,7 +42,7 @@
       "url": "1"
     },
     "cron_exp": {
-      "url": "1"
+      "method": "GET" # require when match condition value of `method is GET`
     },
     "next_run_time": {
       "url": "1"
