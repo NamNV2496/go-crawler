@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -46,9 +47,9 @@ func (_self *CrawlerEventController) CreateCrawlerEvent(
 ) (*crawlerv1.CreateCrawlerEventResponse, error) {
 
 	// // rate limit
-	// if err := _self.checkInserRateLimit(ctx, req.Event.Id); err != nil {
-	// 	return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %v", err)
-	// }
+	if err := _self.checkInserRateLimit(ctx, req.Event.Id); err != nil {
+		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %v", err)
+	}
 
 	if req == nil || req.Event == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request or url is nil")
@@ -76,15 +77,18 @@ func (_self *CrawlerEventController) CreateCrawlerEvent(
 	if err := _self.internalvalidator.ValidateValue(ctx, newEvent); err != nil {
 		return nil, err
 	}
-	// id, err := _self.crawlerEventService.CreateCrawlerEvent(ctx, newEvent)
-	// if err != nil {
-	// 	return nil, status.Errorf(codes.Internal, "failed to create url: %v", err)
-	// }
+	if err := _self.internalvalidator.ValidateCustomeRules(newEvent); err != nil {
+		return nil, err
+	}
+
+	id, err := _self.crawlerEventService.CreateCrawlerEvent(ctx, newEvent)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create url: %v", err)
+	}
 
 	return &crawlerv1.CreateCrawlerEventResponse{
-		// Id:     strconv.FormatInt(id, 10),
-		Id:     "12",
-		Status: "created",
+		Id:     strconv.FormatInt(id, 10),
+		Status: string(http.StatusCreated),
 	}, nil
 }
 

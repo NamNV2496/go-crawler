@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -16,17 +17,20 @@ import (
 type IValidate interface {
 	ValidateRequire(ctx context.Context, action string, req *entity.CrawlerEvent) error
 	ValidateValue(ctx context.Context, req *entity.CrawlerEvent) error
+	ValidateCustomeRules(newEvent *entity.CrawlerEvent) error
 }
 
 type Validate struct {
 	validateByActions map[string]entity.FieldValidation
 	requireByActions  map[string]map[string]entity.FieldRequireCondition
+	customValidators  map[string][]entity.CrossFieldRule
 }
 
 func NewValidate() *Validate {
 	return &Validate{
 		validateByActions: make(map[string]entity.FieldValidation),
 		requireByActions:  make(map[string]map[string]entity.FieldRequireCondition),
+		customValidators:  registerCustomeRules(),
 	}
 }
 
@@ -60,6 +64,120 @@ func (_self *Validate) ValidateValue(ctx context.Context, req *entity.CrawlerEve
 		return err
 	}
 	return nil
+}
+
+func (_self *Validate) ValidateCustomeRules(newEvent *entity.CrawlerEvent) error {
+	eventFields := newEvent.ToMap()
+	for paramName, value := range eventFields {
+		if err := _self.validateCustomeRules(paramName, value, eventFields); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (_self *Validate) validateCustomeRules(paramName, value string, eventFields map[string]string) error {
+	rules, exist := _self.customValidators[paramName]
+	if !exist {
+		return nil
+	}
+
+	for _, rule := range rules {
+		if err := validateCrossField(paramName, value, rule, eventFields); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// validateCrossField validates a field based on cross-field rules
+func validateCrossField(paramName, value string, rule entity.CrossFieldRule, eventFields map[string]string) error {
+	var valid bool
+	var err error
+
+	if rule.Pattern != "" {
+		if value != "" {
+			matched, err := regexp.MatchString(rule.Pattern, value)
+			if err != nil {
+				return fmt.Errorf("%s: Lỗi pattern không hợp lệ", paramName)
+			}
+			if !matched {
+				if rule.ErrorMsg != "" {
+					return fmt.Errorf("%s: %s", paramName, rule.ErrorMsg)
+				}
+				return fmt.Errorf("%s: Giá trị không đúng định dạng", paramName)
+			}
+		}
+	}
+
+	// AllowedValues (Enum) validation
+	if len(rule.AllowedValues) > 0 {
+		if value != "" {
+			found := false
+			for _, allowed := range rule.AllowedValues {
+				if value == allowed {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("%s: Giá trị không hợp lệ. Chỉ chấp nhận: %s", paramName, strings.Join(rule.AllowedValues, ", "))
+			}
+		}
+	}
+	if len(rule.Operator) > 0 {
+		compareValue := eventFields[rule.Field]
+		if len(rule.Value) > 0 {
+			compareValue = rule.Value
+		}
+
+		switch rule.Operator {
+		case entity.OP_EQ: // equal
+			valid = value == compareValue
+		case entity.OP_NE: // not equal
+			valid = value != compareValue
+		case entity.OP_GT: // greater than
+			valid, err = compareNumeric(value, compareValue, func(a, b float64) bool { return a > b })
+		case entity.OP_GTE: // greater than or equal
+			valid, err = compareNumeric(value, compareValue, func(a, b float64) bool { return a >= b })
+		case entity.OP_LT: // less than
+			valid, err = compareNumeric(value, compareValue, func(a, b float64) bool { return a < b })
+		case entity.OP_LTE: // less than or equal
+			valid, err = compareNumeric(value, compareValue, func(a, b float64) bool { return a <= b })
+		default:
+			return fmt.Errorf("%s: Toán tử không hợp lệ '%s'", paramName, rule.Operator)
+		}
+
+		if err != nil {
+			return fmt.Errorf("%s: %v", paramName, err)
+		}
+		if !valid {
+			if rule.ErrorMsg != "" {
+				return fmt.Errorf("%s: %s", paramName, rule.ErrorMsg)
+			}
+		}
+	}
+
+	return nil
+}
+
+// compareNumeric compares two string values as numbers using the provided comparison function
+func compareNumeric(a, b string, compare func(float64, float64) bool) (bool, error) {
+	if a == "" || b == "" {
+		return false, fmt.Errorf("giá trị rỗng không thể so sánh")
+	}
+
+	aNum, err := strconv.ParseFloat(a, 64)
+	if err != nil {
+		return false, fmt.Errorf("giá trị '%s' không phải là số", a)
+	}
+
+	bNum, err := strconv.ParseFloat(b, 64)
+	if err != nil {
+		return false, fmt.Errorf("giá trị '%s' không phải là số", b)
+	}
+
+	return compare(aNum, bNum), nil
 }
 
 func getRequireConditions() (map[string]map[string]entity.FieldRequireCondition, error) {
@@ -202,4 +320,49 @@ func validateValueField(eventMap map[string]string, paramName string, valueCondi
 		}
 	}
 	return nil
+}
+
+func registerCustomeRules() map[string][]entity.CrossFieldRule {
+	customValidators := make(map[string][]entity.CrossFieldRule)
+	rules := map[string][]entity.CrossFieldRule{
+		"method": {
+			{
+				AllowedValues: []string{"GET", "POST"},
+			},
+		},
+		"repeat_times": {
+			{
+				Operator: entity.OP_LTE,
+				Value:    "1",
+				ErrorMsg: "Số lần lặp tối thiểu >= 1",
+			},
+			{
+				Operator: entity.OP_GT,
+				Value:    "1000",
+				ErrorMsg: "Số lần lặp tối thiểu  < 1000",
+			},
+		},
+		"description": {
+			{
+				Value:    "2",
+				Operator: entity.OP_GTE,
+				ErrorMsg: "Độ dài text phải >= 2",
+			},
+		},
+		"scheduler_at": {
+			{
+				Field:    "next_run_time",
+				Operator: entity.OP_EQ,
+				ErrorMsg: "Thời gian trigger lần đầu phải trùng với next_run_time",
+			},
+			{
+				Pattern:  `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$`,
+				ErrorMsg: "Thời gian trigger không đúng format",
+			},
+		},
+	}
+	for field, rule := range rules {
+		customValidators[field] = rule
+	}
+	return customValidators
 }
