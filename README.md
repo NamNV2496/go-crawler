@@ -18,11 +18,16 @@ A simple Job scheduler + web crawler written in Go that crawls websites and extr
 - Kafka: 3.7.1
 - PostgreSQL: 17
 
+- grpc: "google.golang.org/grpc"
 - Ratelimit: "github.com/go-redis/redis_rate/v9"
 - Cron job: "github.com/robfig/cron/v3"
 - Gorm: "gorm.io/gorm"
 - redisLock: "github.com/go-redsync/redsync/v4"
-- logging: custome to add trace_id and prefix function
+- logging: custom to add trace_id and prefix function
+- kafka: "github.com/segmentio/kafka-go"
+- redis: "github.com/go-redis/redis/v8"
+- telegram bot: "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+- robot txt: github.com/temoto/robotstxt
 ```
 
 # Architecture level 1 (branch: v1) [BASIC]
