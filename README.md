@@ -142,6 +142,11 @@ publish to crawler queue: normal, request: curl --location 'https://m.cafef.vn/d
 
 ```bash
 # condition always force require: `"require": "1"`
+# config:
+"url": {
+    "require": "1" # always require
+}
+# request example
 {
     "event": {
         "method": "GET"
@@ -150,18 +155,29 @@ publish to crawler queue: normal, request: curl --location 'https://m.cafef.vn/d
 # output: Vui lòng nhập thông tin "url"
 
 # condition only require when match condition of another field: `"method": "GET"`
+# config:
+"cron_exp": {
+    "method": "GET"
+}
+# request example
 {
     "event": {
         "method": "GET",
         "url": "quis voluptate"
+        # missing "cron_exp" field
     }
 }
 # output: Vui lòng nhập thông tin "cron_exp"
 
 # condition field cron_exp is not require because "method" is not equal "GET"
+# config:
+"cron_exp": {
+    "method": "GET"
+}
+# request example
 {
     "event": {
-        "method": "POST",
+        "method": "POST", // method is POST so "cron_exp" is not required
         // "cron_exp": "dolor id dolore", // not require
         "created_at": "eu sit",
         "description": "eu ea dolore",
@@ -183,6 +199,14 @@ publish to crawler queue: normal, request: curl --location 'https://m.cafef.vn/d
 ## 4.2 Input validation
 
 ```bash
+# config:
+{
+    "repeat_times": {
+    "label": "Số lần lặp",
+    "max_value": 100,
+    "min_value": 2
+}
+# request example
 # invalid value relate min/max value
 {
     "event": {
@@ -204,7 +228,16 @@ publish to crawler queue: normal, request: curl --location 'https://m.cafef.vn/d
 # output: "Số lần lặp" is required <= 100
 
 # invalid number of words relate min/max value
-
+# config:
+{
+    "description": {
+    "label": "Mô tả",
+    "min_length": 2,
+    "max_length": 1000,
+    "min_word": 5,
+    "max_word": 100
+}
+# request example
 {
     "event": {
         "description": "eu ea dolore", // min word is 5
@@ -224,7 +257,15 @@ publish to crawler queue: normal, request: curl --location 'https://m.cafef.vn/d
 }
 # output: "Mô tả" is required >= 5 words
 
-# invalid length of string relate min/max value
+# invalid length of string relate min value
+# config:
+{
+    "url": {
+    "label": "Đường dẫn",
+    "min_length": 2,
+    "max_length": 50
+}
+# request example
 {
     "event": {
         "url": "q", // min length is 2
@@ -245,7 +286,15 @@ publish to crawler queue: normal, request: curl --location 'https://m.cafef.vn/d
 
 # output: "Đường dẫn" is required >= 2 characters
 
-# invalid length of string relate min/max value
+# invalid length of string relate max value
+# config:
+{
+    "url": {
+    "label": "Đường dẫn",
+    "min_length": 2,
+    "max_length": 50
+}
+# request example
 {
     "event": {
         "url": "qádfasdfjkasdfj;klasfjlkfjalksfjjadls;kfjkladfsjdlsakfjdlkdsajfl;ạdsladsjl;kadsjadsl;fjd", // max length is 50
