@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/namnv2496/scheduler/internal/configs"
@@ -13,6 +13,8 @@ import (
 	"github.com/namnv2496/scheduler/internal/repository"
 	"github.com/namnv2496/scheduler/internal/repository/distributedlock"
 	"github.com/namnv2496/scheduler/internal/service/mq"
+	"github.com/namnv2496/scheduler/pkg/logging"
+
 	"github.com/robfig/cron/v3"
 )
 
@@ -56,7 +58,8 @@ func (_self *CrawlerCronJob) Start() error {
 		_self.conf.Cron.CronExpression,
 		_self.ExecuteEvent(ctx),
 	)
-	log.Printf("Cron job queue %s, every 1 minutes is started", entity.QueueTypeNormal)
+	logging.ResetPrefix(ctx, "Start")
+	logging.Info(ctx, "Cron job queue %s, every 1 minutes is started", entity.QueueTypeNormal)
 	if err != nil {
 		return err
 	}
@@ -65,57 +68,85 @@ func (_self *CrawlerCronJob) Start() error {
 }
 
 func (_self *CrawlerCronJob) ExecuteEvent(ctx context.Context) func() {
+	deferFunc := logging.AppendPrefix("ExecuteEvent")
+	defer deferFunc()
 	return func() {
-		log.Println("Acquire and execute event")
+		logging.Info(ctx, "Acquire and execute event")
 		now := time.Now().UnixMilli()
 		events, err := _self.crawlerEventRepo.GetCrawlerEventByStatusAndSchedulerAt(ctx, domain.StatusPending, now)
 		if err != nil {
-			log.Printf("Failed to get crawler events: %v", err)
+			logging.Error(ctx, "Failed to get crawler events: %v", err)
 			return
 		}
-		updateEvents := make([]*domain.CrawlerEvent, 0)
+
+		updateEventsChan := make(chan *domain.CrawlerEvent, len(events))
+		semaphore := make(chan struct{}, MaxWorker)
+		var wg sync.WaitGroup
+
 		for _, event := range events {
-			mutex, err := _self.distributedLock.Lock(fmt.Sprint(event.Id), time.Second*10)
-			if err != nil {
-				log.Printf("Failed to acquire lock for URL %s: %v", event.Url, err)
-				continue
-			}
-			defer mutex.Unlock()
-			if err := _self.publishToCrawler(ctx, entity.CrawlerEvent(*event)); err != nil {
-				continue
-			}
-			event.Status = domain.StatusRunning
-			if event.RepeatTimes > 0 {
-				event.RepeatTimes = event.RepeatTimes - 1
-				var nextTime int64
-				for i := 1; i <= 10; i++ {
-					if event.SchedulerAt+event.NextRunTime*int64(i) > now {
-						nextTime = event.NextRunTime * int64(i)
-						break
+			// separate go routine to work as much as possible
+			wg.Add(1)
+			go func(e *domain.CrawlerEvent) {
+				defer wg.Done()
+				semaphore <- struct{}{}
+				defer func() { <-semaphore }()
+
+				mutex, err := _self.distributedLock.Lock(fmt.Sprint(e.Id), time.Second*10)
+				if err != nil {
+					logging.Error(ctx, "Failed to acquire lock for URL %s: %v", e.Url, err)
+					return
+				}
+				defer mutex.Unlock()
+
+				if err := _self.publishToCrawler(ctx, entity.CrawlerEvent(*e)); err != nil {
+					return
+				}
+
+				e.Status = domain.StatusRunning
+				if e.RepeatTimes > 0 {
+					e.RepeatTimes = e.RepeatTimes - 1
+					var nextTime int64
+					for i := 1; i <= 10; i++ {
+						if e.SchedulerAt+e.NextRunTime*int64(i) > now {
+							nextTime = e.NextRunTime * int64(i)
+							break
+						}
 					}
+					if nextTime == 0 {
+						nextTime = now + e.NextRunTime - e.SchedulerAt
+					}
+					e.SchedulerAt = e.SchedulerAt + nextTime
+				} else {
+					e.Status = domain.StatusFailed
 				}
-				if nextTime == 0 {
-					nextTime = now + event.NextRunTime - event.SchedulerAt
-				}
-				event.SchedulerAt = event.SchedulerAt + nextTime
-			} else {
-				event.Status = domain.StatusFailed
-			}
+				updateEventsChan <- e
+			}(event)
+		}
+
+		go func() {
+			wg.Wait()
+			close(updateEventsChan)
+		}()
+
+		updateEvents := make([]*domain.CrawlerEvent, 0)
+		for event := range updateEventsChan {
 			updateEvents = append(updateEvents, event)
 		}
-		// update events
-		log.Printf("update events: %d", len(events))
+
+		logging.Info(ctx, "update events: %d", len(updateEvents))
 		if err := _self.crawlerEventRepo.Updates(ctx, updateEvents); err != nil {
-			log.Printf("error update events: %s", err)
+			logging.Error(ctx, "error update events: %s", err)
 		}
 	}
 }
 
 func (_self *CrawlerCronJob) publishToCrawler(ctx context.Context, eventData entity.CrawlerEvent) error {
+	deferFunc := logging.AppendPrefix("publishToCrawler")
+	defer deferFunc()
 	err := _self.producers.Publish(ctx, eventData.Queue, strconv.Itoa(int(eventData.Id)), eventData)
 	if err != nil {
 		// Can apply retry at here
-		log.Printf("Publish message to kafka failed: %+v, err: %s", eventData, err)
+		logging.Info(ctx, "Publish message to kafka failed: %+v, err: %s", eventData, err)
 		return err
 	}
 	return nil

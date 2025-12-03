@@ -3,11 +3,11 @@ package cmd
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"time"
 
 	"github.com/namnv2496/crawler/internal/configs"
 	"github.com/namnv2496/crawler/internal/entity"
+	"github.com/namnv2496/crawler/internal/pkg/logging"
 	"github.com/namnv2496/crawler/internal/repository"
 	"github.com/namnv2496/crawler/internal/service"
 	"github.com/namnv2496/crawler/internal/service/mq"
@@ -55,7 +55,6 @@ func startCrawlerWorker(
 	consumer mq.IConsumer,
 	crawlerService service.ICrawlerService,
 ) {
-	log.Println("Start consumer")
 	startConsumer(consumer, crawlerService)
 	select {}
 }
@@ -66,7 +65,8 @@ func startConsumer(
 ) {
 	for _, consumer := range consumer.GetConsumer() {
 		go func(consumer *kafka.Reader) {
-			ctx := context.Background()
+			ctx := logging.InjectTraceId(context.Background())
+			logging.ResetPrefix(ctx, "startConsumer")
 			rateLimiter := time.Tick(time.Second / 10) // 10 requests per second
 			defer consumer.Close()
 			for {
@@ -84,10 +84,10 @@ func startConsumer(
 						return
 					}
 					if err := crawlerService.Crawl(ctx, url); err != nil {
-						log.Println(err)
+						logging.Error(ctx, err.Error())
 						return
 					}
-					log.Printf("message at topic:%v partition:%v offset:%v\t%s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
+					logging.Debug(ctx, "message at topic:%v partition:%v offset:%v\t%s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
 
 				case <-ctx.Done():
 					return
@@ -100,7 +100,8 @@ func startConsumer(
 func startTest(
 	crawlerService service.ICrawlerService,
 ) {
-	ctx := context.Background()
+	ctx := logging.InjectTraceId(context.Background())
+	logging.ResetPrefix(ctx, "startTest")
 	url := entity.CrawlerEvent{
 		Id:       1,
 		Url:      "https://cellphones.com.vn/robots.txt",
@@ -110,7 +111,7 @@ func startTest(
 		IsActive: true,
 	}
 	if err := crawlerService.Crawl(ctx, url); err != nil {
-		log.Println(err)
+		logging.Error(ctx, err.Error())
 		return
 	}
 }

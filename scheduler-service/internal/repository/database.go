@@ -2,7 +2,6 @@ package repository
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/namnv2496/scheduler/internal/configs"
 	"github.com/namnv2496/scheduler/internal/domain"
@@ -34,7 +33,7 @@ func NewDatabase(
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
-		log.Printf("Failed to connect to database: %v", err)
+		fmt.Printf("Failed to connect to database: %v", err)
 		return nil, err
 	}
 	// Enable connection pool

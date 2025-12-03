@@ -22,6 +22,7 @@ A simple Job scheduler + web crawler written in Go that crawls websites and extr
 - Cron job: "github.com/robfig/cron/v3"
 - Gorm: "gorm.io/gorm"
 - redisLock: "github.com/go-redsync/redsync/v4"
+- logging: custome to add trace_id and prefix function
 ```
 
 # Architecture level 1 (branch: v1) [BASIC]
@@ -101,6 +102,10 @@ go run main.go scheduler
 
 cd scheduler-service
 go run main.go scheduler_worker
+
+# loging example:
+# [CreateCrawlerEvent] [checkInserRateLimit] 2025/12/04 00:54:52 [INFO] trace_id=4ab70ed6-44f4-4fc5-b2f4-e6cbe3c0393b - rate limit is called namnv 123
+# [CreateCrawlerEvent] 2025/12/04 00:54:52 [INFO] trace_id=4ab70ed6-44f4-4fc5-b2f4-e6cbe3c0393b - CreateCrawlerEvent is called
 
 ```
 

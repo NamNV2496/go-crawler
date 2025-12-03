@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"time"
@@ -93,7 +92,8 @@ func startServer(
 	go func() {
 		fmt.Printf("HTTP server is running on %s\n", config.AppConfig.HTTPPort)
 		if err := http.ListenAndServe(config.AppConfig.HTTPPort, mux); err != nil {
-			log.Fatalf("failed to start HTTP server: %v", err)
+			fmt.Errorf("failed to start HTTP server: %s", err.Error())
+			panic("failed to start HTTP server")
 		}
 	}()
 	return server.Serve(listener)

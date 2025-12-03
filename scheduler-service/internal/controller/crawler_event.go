@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -17,6 +16,7 @@ import (
 	// Import service
 
 	crawlerv1 "github.com/namnv2496/scheduler/pkg/generated/pkg/proto"
+	"github.com/namnv2496/scheduler/pkg/logging"
 	"github.com/namnv2496/scheduler/pkg/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -45,12 +45,15 @@ func (_self *CrawlerEventController) CreateCrawlerEvent(
 	ctx context.Context,
 	req *crawlerv1.CreateCrawlerEventRequest,
 ) (*crawlerv1.CreateCrawlerEventResponse, error) {
+	ctx = logging.InjectTraceId(ctx)
+	logging.ResetPrefix(ctx, "CreateCrawlerEvent")
 
 	// // rate limit
 	if err := _self.checkInserRateLimit(ctx, req.Event.Id); err != nil {
 		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %v", err)
 	}
 
+	logging.Info(ctx, "CreateCrawlerEvent is called")
 	if req == nil || req.Event == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request or url is nil")
 	}
@@ -88,7 +91,7 @@ func (_self *CrawlerEventController) CreateCrawlerEvent(
 
 	return &crawlerv1.CreateCrawlerEventResponse{
 		Id:     strconv.FormatInt(id, 10),
-		Status: string(http.StatusCreated),
+		Status: strconv.Itoa(http.StatusCreated),
 	}, nil
 }
 
@@ -96,6 +99,9 @@ func (_self *CrawlerEventController) GetCrawlerEvents(
 	ctx context.Context,
 	req *crawlerv1.GetCrawlerEventsRequest,
 ) (*crawlerv1.GetCrawlerEventsResponse, error) {
+	ctx = logging.InjectTraceId(ctx)
+	logging.ResetPrefix(ctx, "GetCrawlerEvents")
+	logging.Info(ctx, "GetCrawlerEvents is called")
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request is nil")
 	}
@@ -139,6 +145,8 @@ func (_self *CrawlerEventController) UpdateCrawlerEvent(
 	ctx context.Context,
 	req *crawlerv1.UpdateCrawlerEventRequest,
 ) (*crawlerv1.UpdateCrawlerEventResponse, error) {
+	ctx = logging.InjectTraceId(ctx)
+	logging.ResetPrefix(ctx, "UpdateCrawlerEvent")
 	if req == nil || req.Event == nil || req.Id == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "request, url, or id is nil/empty")
 	}
@@ -188,6 +196,10 @@ func (_self *CrawlerEventController) checkRateLimit(ctx context.Context, key str
 }
 
 func (_self *CrawlerEventController) checkInserRateLimit(ctx context.Context, key string) error {
+	deferFunc := logging.AppendPrefix("checkInserRateLimit")
+	defer deferFunc()
+	logging.Info(ctx, "rate limit is called")
+
 	// rate limit 50 request/ second you can use LimitSecond(50 /*rate*/, 1)
 	pass, err := _self.ratelimter.Allow(ctx, "create_event", key, utils.LimitCustom(50 /*rate*/, 1 /*burst*/, time.Second))
 	if err != nil {
@@ -200,7 +212,9 @@ func (_self *CrawlerEventController) checkInserRateLimit(ctx context.Context, ke
 }
 
 func (_self *CrawlerEventController) UpdateEventStatus(ctx context.Context, req *crawlerv1.UpdateEventStatusRequest) (*crawlerv1.UpdateEventStatusResponse, error) {
-	log.Printf("update status of event: %s", req)
+	ctx = logging.InjectTraceId(ctx)
+	logging.ResetPrefix(ctx, "UpdateEventStatus")
+	logging.Debug(ctx, "update status of event: %s", req)
 	err := _self.crawlerEventService.UpdateEventStatus(ctx, req.Id, domain.StatusEnum(req.Status))
 	if err != nil {
 		return nil, err

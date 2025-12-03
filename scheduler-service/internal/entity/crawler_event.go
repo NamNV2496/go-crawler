@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -34,7 +33,7 @@ type CrawlerEvent struct {
 func (_self CrawlerEvent) HashKey(key any) string {
 	hash, err := hashstructure.Hash(key, hashstructure.FormatV2, nil)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("failed to hash key: %v\n", err)
 	}
 	return fmt.Sprintf("%d", hash)
 

@@ -5,10 +5,8 @@ go 1.23.4
 require (
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/go-redis/redis/v8 v8.11.4
-	github.com/go-redis/redis_rate/v9 v9.1.2
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
-	github.com/jinzhu/copier v0.4.0
+	github.com/google/uuid v1.6.0
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/redis/go-redis/v9 v9.10.0
 	github.com/segmentio/kafka-go v0.4.48
@@ -16,9 +14,6 @@ require (
 	github.com/temoto/robotstxt v1.1.2
 	go.uber.org/fx v1.24.0
 	golang.org/x/net v0.40.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20250519155744-55703ea1f237
-	google.golang.org/grpc v1.72.1
-	google.golang.org/protobuf v1.36.6
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.26.1
 )
@@ -44,5 +39,4 @@ require (
 	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250512202823-5a2f75b736a9 // indirect
 )

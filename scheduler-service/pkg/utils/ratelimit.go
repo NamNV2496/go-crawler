@@ -8,6 +8,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	redisratev9 "github.com/go-redis/redis_rate/v9"
 	"github.com/namnv2496/scheduler/internal/configs"
+	"github.com/namnv2496/scheduler/pkg/logging"
 )
 
 const (
@@ -92,6 +93,8 @@ func LimitCustom(rate, burst int, period time.Duration) redisratev9.Limit {
 }
 
 func (_self *RateLimit) Allow(ctx context.Context, path, key string, limits ...redisratev9.Limit) (pass bool, err error) {
+	deferFunc := logging.AppendPrefix("Allow")
+	defer deferFunc()
 	if len(limits) == 0 {
 		return true, nil
 	}

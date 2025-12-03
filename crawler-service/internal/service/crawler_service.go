@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/namnv2496/crawler/internal/domain"
 	"github.com/namnv2496/crawler/internal/entity"
+	"github.com/namnv2496/crawler/internal/pkg/logging"
 	"github.com/namnv2496/crawler/internal/repository"
 	"github.com/temoto/robotstxt"
 	"golang.org/x/net/html"
@@ -55,6 +55,8 @@ func NewCrawlerService(
 
 // Crawl starts crawling from the given URL up to the maximum depth
 func (_self *CrawlerService) Crawl(ctx context.Context, url entity.CrawlerEvent) error {
+	deferFunc := logging.AppendPrefix("Crawl")
+	defer deferFunc()
 	if !url.IsActive {
 		return nil
 	}
@@ -66,6 +68,8 @@ func (_self *CrawlerService) Crawl(ctx context.Context, url entity.CrawlerEvent)
 }
 
 func (_self *CrawlerService) crawlPage(ctx context.Context, url entity.CrawlerEvent, depth int) error {
+	deferFunc := logging.AppendPrefix("crawlPage")
+	defer deferFunc()
 	if depth > _self.maxDepth {
 		return nil
 	}
@@ -94,12 +98,12 @@ func (_self *CrawlerService) crawlPage(ctx context.Context, url entity.CrawlerEv
 		reqBody := fmt.Sprintf(`{"id":%d,"status":"successed"}`, url.Id)
 		resp, err := http.Post("http://localhost:8080/api/v1/event/status", "application/json", strings.NewReader(reqBody))
 		if err != nil {
-			log.Printf("failed to update status: %v", err)
+			logging.Error(ctx, "failed to update status: %v", err)
 			return
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			log.Printf("status update returned non-200: %d", resp.StatusCode)
+			logging.Debug(ctx, "status update returned non-200: %d", resp.StatusCode)
 		}
 	}()
 	return nil
@@ -177,6 +181,8 @@ func (_self *CrawlerService) crawlPOST(ctx context.Context, url entity.CrawlerEv
 }
 
 func (_self *CrawlerService) crawlCurl(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
+	deferFunc := logging.AppendPrefix("crawlPage")
+	defer deferFunc()
 	// Parse the curl command string
 	parts := strings.Split(url.Url, "--")
 	var args []string
@@ -219,7 +225,7 @@ func (_self *CrawlerService) crawlCurl(ctx context.Context, url entity.CrawlerEv
 				return
 			}
 			if err = _self.teleService.SendMessage(ExtractGoldPrice(output), "text"); err != nil {
-				log.Printf("send price error: %s", err.Error())
+				logging.Error(ctx, "send price error: %s", err.Error())
 			}
 			// write result to db
 			if err = _self.resultRepo.CreateResult(ctx, &domain.Result{
@@ -229,10 +235,10 @@ func (_self *CrawlerService) crawlCurl(ctx context.Context, url entity.CrawlerEv
 				Domain: url.Domain,
 				Result: string(output),
 			}); err != nil {
-				log.Printf("create result error: %s", err.Error())
+				logging.Error(ctx, "create result error: %s", err.Error())
 			}
-			log.Printf("send message to Telegram: %v\n", string(output))
-			log.Println("=======================================")
+			logging.Debug(ctx, "send message to Telegram: %v\n", string(output))
+			logging.Debug(ctx, "=======================================")
 			_self.results["test"] = string(output)
 		})
 	if err != nil {

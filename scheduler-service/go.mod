@@ -7,6 +7,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redis/redis_rate/v9 v9.1.2
 	github.com/go-redsync/redsync/v4 v4.13.0
+	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
 	github.com/jinzhu/copier v0.4.0

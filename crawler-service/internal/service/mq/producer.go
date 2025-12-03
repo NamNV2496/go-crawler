@@ -3,9 +3,9 @@ package mq
 import (
 	"context"
 	"encoding/json"
-	"log"
 
 	"github.com/namnv2496/crawler/internal/configs"
+	"github.com/namnv2496/crawler/internal/pkg/logging"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -35,9 +35,11 @@ func NewKafkaProducer(
 }
 
 func (p *Producer) Publish(ctx context.Context, topic, key string, value any) error {
+	deferFunc := logging.AppendPrefix("Publish")
+	defer deferFunc()
 	producer := p.client[topic]
 	if producer == nil {
-		log.Printf("topic %s not found", topic)
+		logging.Error(ctx, "topic %s not found", topic)
 		return nil
 	}
 	jsonData, err := json.Marshal(value)
