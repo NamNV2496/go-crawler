@@ -68,14 +68,14 @@ func (_self *CrawlerCronJob) Start() error {
 }
 
 func (_self *CrawlerCronJob) ExecuteEvent(ctx context.Context) func() {
-	deferFunc := logging.AppendPrefix("ExecuteEvent")
-	defer deferFunc()
+	ctx = logging.AppendPrefix(ctx, "ExecuteEvent")
+
 	return func() {
 		logging.Info(ctx, "Acquire and execute event")
 		now := time.Now().UnixMilli()
 		events, err := _self.crawlerEventRepo.GetCrawlerEventByStatusAndSchedulerAt(ctx, domain.StatusPending, now)
 		if err != nil {
-			logging.Error(ctx, "Failed to get crawler events: %v", err)
+			logging.Errorf(ctx, "Failed to get crawler events: %v", err)
 			return
 		}
 
@@ -93,7 +93,7 @@ func (_self *CrawlerCronJob) ExecuteEvent(ctx context.Context) func() {
 
 				mutex, err := _self.distributedLock.Lock(fmt.Sprint(e.Id), time.Second*10)
 				if err != nil {
-					logging.Error(ctx, "Failed to acquire lock for URL %s: %v", e.Url, err)
+					logging.Errorf(ctx, "Failed to acquire lock for URL %s: %v", e.Url, err)
 					return
 				}
 				defer mutex.Unlock()
@@ -135,14 +135,14 @@ func (_self *CrawlerCronJob) ExecuteEvent(ctx context.Context) func() {
 
 		logging.Info(ctx, "update events: %d", len(updateEvents))
 		if err := _self.crawlerEventRepo.Updates(ctx, updateEvents); err != nil {
-			logging.Error(ctx, "error update events: %s", err)
+			logging.Errorf(ctx, "error update events: %s", err)
 		}
 	}
 }
 
 func (_self *CrawlerCronJob) publishToCrawler(ctx context.Context, eventData entity.CrawlerEvent) error {
-	deferFunc := logging.AppendPrefix("publishToCrawler")
-	defer deferFunc()
+	// deferFunc := logging.AppendPrefix("publishToCrawler")
+	// defer deferFunc()
 	err := _self.producers.Publish(ctx, eventData.Queue, strconv.Itoa(int(eventData.Id)), eventData)
 	if err != nil {
 		// Can apply retry at here

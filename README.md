@@ -30,6 +30,24 @@ A simple Job scheduler + web crawler written in Go that crawls websites and extr
 - robot txt: github.com/temoto/robotstxt
 ```
 
+## Logging example
+
+```bash
+# crawler service use "log"
+
+[CreateCrawlerEvent] [checkInserRateLimit] 2025/12/04 00:54:52 [INFO] trace_id=4ab70ed6-44f4-4fc5-b2f4-e6cbe3c0393b - rate limit is called namnv 123
+[CreateCrawlerEvent] 2025/12/04 00:54:52 [INFO] trace_id=4ab70ed6-44f4-4fc5-b2f4-e6cbe3c0393b - CreateCrawlerEvent is called
+
+
+# scheduler service use "go.uber.org/zap"
+{"level":"INFO","ts":"2025-12-04T19:38:34.536+0700","caller":"logging/logging.go:87","msg":"[CreateCrawlerEvent] CreateCrawlerEvent is called before","trace_id":"9c8c1d83-b854-48cd-a487-fc233abf0505"}
+{"level":"INFO","ts":"2025-12-04T19:38:34.536+0700","caller":"logging/logging.go:87","msg":"[CreateCrawlerEvent] [checkInserRateLimit] rate limit is called","trace_id":"9c8c1d83-b854-48cd-a487-fc233abf0505"}
+{"level":"INFO","ts":"2025-12-04T19:38:34.536+0700","caller":"logging/logging.go:87","msg":"[CreateCrawlerEvent] [checkInserRateLimit] [Allow] allow","trace_id":"9c8c1d83-b854-48cd-a487-fc233abf0505"}
+{"level":"INFO","ts":"2025-12-04T19:38:34.540+0700","caller":"logging/logging.go:87","msg":"[CreateCrawlerEvent] [checkInserRateLimit] rate limit is called after","trace_id":"9c8c1d83-b854-48cd-a487-fc233abf0505"}
+{"level":"INFO","ts":"2025-12-04T19:38:34.540+0700","caller":"logging/logging.go:87","msg":"[CreateCrawlerEvent] CreateCrawlerEvent is called after","trace_id":"9c8c1d83-b854-48cd-a487-fc233abf0505"}
+
+
+```
 # Architecture level 1 (branch: v1) [BASIC]
 
 Is basic crawler 
@@ -107,10 +125,6 @@ go run main.go scheduler
 
 cd scheduler-service
 go run main.go scheduler_worker
-
-# loging example:
-# [CreateCrawlerEvent] [checkInserRateLimit] 2025/12/04 00:54:52 [INFO] trace_id=4ab70ed6-44f4-4fc5-b2f4-e6cbe3c0393b - rate limit is called namnv 123
-# [CreateCrawlerEvent] 2025/12/04 00:54:52 [INFO] trace_id=4ab70ed6-44f4-4fc5-b2f4-e6cbe3c0393b - CreateCrawlerEvent is called
 
 ```
 

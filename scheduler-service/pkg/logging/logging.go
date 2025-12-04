@@ -3,89 +3,91 @@ package logging
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
+
+type ctxKey string
+
+const (
+	traceIDKey ctxKey = "trace_id"
+	prefixKey  ctxKey = "prefix"
+	loggerKey  ctxKey = "logger"
 )
 
 type Logger struct {
-	*log.Logger
+	logger *zap.SugaredLogger
 }
 
-var loggerInstance *Logger
+var defaultLogger *Logger
 
 func init() {
-	loggerInstance = NewLogger(log.Default())
+	defaultLogger = newDefaultLogger("")
 }
 
-func NewLogger(logger *log.Logger) *Logger {
-	return &Logger{logger}
-}
+func newDefaultLogger(name string) *Logger {
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
 
-func GetLogger() *Logger {
-	return loggerInstance
-}
+	cfg := zap.NewProductionConfig()
+	cfg.EncoderConfig = encoderConfig
 
-func (l *Logger) ResetPrefix(funcName string) {
-	l.SetPrefix("[" + funcName + "] ")
-}
+	l, err := cfg.Build()
+	if err != nil {
+		panic(err)
+	}
 
-func (l *Logger) AppendPrefix(funcName string) {
-	l.SetPrefix(l.Prefix() + "[" + funcName + "] ")
-}
-
-func (l *Logger) Info(ctx context.Context, msg string) {
-	traceID := ctx.Value("trace_id")
-	l.Printf("[INFO] trace_id=%v - %s\n", traceID, msg)
-}
-
-func (l *Logger) Error(ctx context.Context, msg string) {
-	traceID := ctx.Value("trace_id")
-	l.Printf("[ERROR] trace_id=%v - %s\n", traceID, msg)
-}
-
-func (l *Logger) Debug(ctx context.Context, msg string) {
-	traceID := ctx.Value("trace_id")
-	l.Printf("[DEBUG] trace_id=%v - %s\n", traceID, msg)
-}
-
-func (l *Logger) Warn(ctx context.Context, msg string) {
-	traceID := ctx.Value("trace_id")
-	l.Printf("[WARN] trace_id=%v - %s\n", traceID, msg)
-}
-
-func Info(ctx context.Context, template string, v ...any) {
-	msg := fmt.Sprintf(template, v...)
-	loggerInstance.Info(ctx, msg)
-}
-
-func Error(ctx context.Context, template string, v ...any) {
-	msg := fmt.Sprintf(template, v...)
-	loggerInstance.Error(ctx, msg)
-}
-
-func Debug(ctx context.Context, template string, v ...any) {
-	msg := fmt.Sprintf(template, v...)
-	loggerInstance.Debug(ctx, msg)
-}
-
-func Warn(ctx context.Context, template string, v ...any) {
-	msg := fmt.Sprintf(template, v...)
-	loggerInstance.Warn(ctx, msg)
-}
-
-func AppendPrefix(funcName string) func() {
-	previous := loggerInstance.Prefix()
-	loggerInstance.AppendPrefix(funcName)
-	return func() {
-		loggerInstance.SetPrefix(previous)
+	return &Logger{
+		logger: l.Named(name).Sugar(),
 	}
 }
 
-func ResetPrefix(ctx context.Context, funcName string) {
-	loggerInstance.ResetPrefix(funcName)
+// override name
+func SetName(name string) { defaultLogger.logger.Named(name) }
+
+// ===== inject trace id =====
+func InjectTraceId(ctx context.Context) context.Context {
+	trace := uuid.New().String()
+	logger := defaultLogger.logger.With("trace_id", trace)
+
+	ctx = context.WithValue(ctx, traceIDKey, trace)
+	ctx = context.WithValue(ctx, loggerKey, logger)
+	return ctx
 }
 
-func InjectTraceId(ctx context.Context) context.Context {
-	return context.WithValue(ctx, "trace_id", uuid.New())
+func getLogger(ctx context.Context) *zap.SugaredLogger {
+	if l, ok := ctx.Value(loggerKey).(*zap.SugaredLogger); ok {
+		return l
+	}
+	return defaultLogger.logger
+}
+
+// ===== prefix logic =====
+func ResetPrefix(ctx context.Context, funcName string) context.Context {
+	return context.WithValue(ctx, prefixKey, "["+funcName+"] ")
+}
+
+func AppendPrefix(ctx context.Context, funcName string) context.Context {
+	old, _ := ctx.Value(prefixKey).(string)
+	newPrefix := old + "[" + funcName + "] "
+	return context.WithValue(ctx, prefixKey, newPrefix)
+}
+
+func getPrefix(ctx context.Context) string {
+	p, _ := ctx.Value(prefixKey).(string)
+	return p
+}
+
+// ===== log funcs =====
+func Info(ctx context.Context, args ...any) {
+	prefix := getPrefix(ctx)
+	getLogger(ctx).Info(prefix + fmt.Sprint(args...))
+}
+
+func Errorf(ctx context.Context, template string, args ...any) {
+	prefix := getPrefix(ctx)
+	getLogger(ctx).Errorf(prefix+template, args...)
 }

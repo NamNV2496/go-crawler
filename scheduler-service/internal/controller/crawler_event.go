@@ -46,14 +46,16 @@ func (_self *CrawlerEventController) CreateCrawlerEvent(
 	req *crawlerv1.CreateCrawlerEventRequest,
 ) (*crawlerv1.CreateCrawlerEventResponse, error) {
 	ctx = logging.InjectTraceId(ctx)
-	logging.ResetPrefix(ctx, "CreateCrawlerEvent")
+	logging.SetName("scheduler")
+	ctx = logging.ResetPrefix(ctx, "CreateCrawlerEvent")
 
+	logging.Info(ctx, "CreateCrawlerEvent is called before")
 	// // rate limit
 	if err := _self.checkInserRateLimit(ctx, req.Event.Id); err != nil {
 		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %v", err)
 	}
 
-	logging.Info(ctx, "CreateCrawlerEvent is called")
+	logging.Info(ctx, "CreateCrawlerEvent is called after")
 	if req == nil || req.Event == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request or url is nil")
 	}
@@ -100,7 +102,9 @@ func (_self *CrawlerEventController) GetCrawlerEvents(
 	req *crawlerv1.GetCrawlerEventsRequest,
 ) (*crawlerv1.GetCrawlerEventsResponse, error) {
 	ctx = logging.InjectTraceId(ctx)
-	logging.ResetPrefix(ctx, "GetCrawlerEvents")
+	logging.SetName("scheduler")
+	ctx = logging.ResetPrefix(ctx, "GetCrawlerEvents")
+
 	logging.Info(ctx, "GetCrawlerEvents is called")
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request is nil")
@@ -146,7 +150,7 @@ func (_self *CrawlerEventController) UpdateCrawlerEvent(
 	req *crawlerv1.UpdateCrawlerEventRequest,
 ) (*crawlerv1.UpdateCrawlerEventResponse, error) {
 	ctx = logging.InjectTraceId(ctx)
-	logging.ResetPrefix(ctx, "UpdateCrawlerEvent")
+	ctx = logging.ResetPrefix(ctx, "UpdateCrawlerEvent")
 	if req == nil || req.Event == nil || req.Id == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "request, url, or id is nil/empty")
 	}
@@ -196,8 +200,8 @@ func (_self *CrawlerEventController) checkRateLimit(ctx context.Context, key str
 }
 
 func (_self *CrawlerEventController) checkInserRateLimit(ctx context.Context, key string) error {
-	deferFunc := logging.AppendPrefix("checkInserRateLimit")
-	defer deferFunc()
+	ctx = logging.AppendPrefix(ctx, "checkInserRateLimit")
+
 	logging.Info(ctx, "rate limit is called")
 
 	// rate limit 50 request/ second you can use LimitSecond(50 /*rate*/, 1)
@@ -205,6 +209,7 @@ func (_self *CrawlerEventController) checkInserRateLimit(ctx context.Context, ke
 	if err != nil {
 		return err
 	}
+	logging.Info(ctx, "rate limit is called after")
 	if !pass {
 		return fmt.Errorf("rate limit exceeded")
 	}
@@ -214,7 +219,7 @@ func (_self *CrawlerEventController) checkInserRateLimit(ctx context.Context, ke
 func (_self *CrawlerEventController) UpdateEventStatus(ctx context.Context, req *crawlerv1.UpdateEventStatusRequest) (*crawlerv1.UpdateEventStatusResponse, error) {
 	ctx = logging.InjectTraceId(ctx)
 	logging.ResetPrefix(ctx, "UpdateEventStatus")
-	logging.Debug(ctx, "update status of event: %s", req)
+	logging.Info(ctx, "update status of event: %s", req)
 	err := _self.crawlerEventService.UpdateEventStatus(ctx, req.Id, domain.StatusEnum(req.Status))
 	if err != nil {
 		return nil, err

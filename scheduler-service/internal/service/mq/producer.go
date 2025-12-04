@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/namnv2496/scheduler/internal/configs"
-	"github.com/namnv2496/scheduler/pkg/logging"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -35,11 +34,11 @@ func NewKafkaProducer(
 }
 
 func (p *Producer) Publish(ctx context.Context, topic, key string, value any) error {
-	deferFunc := logging.AppendPrefix("Publish")
-	defer deferFunc()
+	// deferFunc := logging.AppendPrefix("Publish")
+	// defer deferFunc()
 	producer := p.client[topic]
 	if producer == nil {
-		logging.Error(ctx, "topic %s not found", topic)
+		// logging.Error(ctx, "topic %s not found", topic)
 		return nil
 	}
 	jsonData, err := json.Marshal(value)
