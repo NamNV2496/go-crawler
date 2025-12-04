@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -83,15 +85,14 @@ func (_self *Validate) validateCustomeRules(paramName, value string, eventFields
 	}
 
 	for _, rule := range rules {
-		if err := validateCrossField(paramName, value, rule, eventFields); err != nil {
+		if err := validateFieldCustomeRule(paramName, value, rule, eventFields); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// validateCrossField validates a field based on cross-field rules
-func validateCrossField(paramName, value string, rule entity.CrossFieldRule, eventFields map[string]string) error {
+func validateFieldCustomeRule(paramName, value string, rule entity.CrossFieldRule, eventFields map[string]string) error {
 	var valid bool
 	var err error
 
@@ -113,13 +114,7 @@ func validateCrossField(paramName, value string, rule entity.CrossFieldRule, eve
 	// AllowedValues (Enum) validation
 	if len(rule.AllowedValues) > 0 {
 		if value != "" {
-			found := false
-			for _, allowed := range rule.AllowedValues {
-				if value == allowed {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(rule.AllowedValues, value)
 			if !found {
 				return fmt.Errorf("%s: Giá trị không hợp lệ. Chỉ chấp nhận: %s", paramName, strings.Join(rule.AllowedValues, ", "))
 			}
@@ -256,14 +251,14 @@ func validateRequireField(eventMap map[string]string, paramName string, requireC
 func validateValueEventInfo(event *entity.CrawlerEvent, valueCondition map[string]entity.FieldValidation) error {
 	eventMap := event.ToMap()
 	for paramName, condition := range valueCondition {
-		if err := validateValueField(eventMap, paramName, condition); err != nil {
+		if err := validateFieldValue(eventMap, paramName, condition); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func validateValueField(eventMap map[string]string, paramName string, valueCondition entity.FieldValidation) error {
+func validateFieldValue(eventMap map[string]string, paramName string, valueCondition entity.FieldValidation) error {
 	inputValue := eventMap[paramName]
 	if valueCondition.MinValue > 0 {
 		if inputValue != "" {
@@ -361,8 +356,6 @@ func registerCustomeRules() map[string][]entity.CrossFieldRule {
 			},
 		},
 	}
-	for field, rule := range rules {
-		customValidators[field] = rule
-	}
+	maps.Copy(customValidators, rules)
 	return customValidators
 }

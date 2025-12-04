@@ -72,7 +72,7 @@ flowchart LR
 
 In Architecture level 1, we only query and execute 1 time. Let expand the problem with harder question
 - Can we execute for daily, monthly job?
-- As current we run sequencely job because a job is quite short response. What happend if long running job? example: download a large file, run a large step. => How to handle it? And in running time of that job, can we run another job?
+- As current we run sequencely job because a job is quite short latency. What happend if long running job? example: download a large file, run aggregation big data. => How to handle it? And in running time of that job, can we run another job?
 - In actually, crawler include scheduler problem => split to scheduler + crawler
 
 # FINAL DESIGN
@@ -193,6 +193,7 @@ publish to crawler queue: normal, request: curl --location 'https://m.cafef.vn/d
     "event": {
         "method": "POST", // method is POST so "cron_exp" is not required
         // "cron_exp": "dolor id dolore", // not require
+        
         "created_at": "eu sit",
         "description": "eu ea dolore",
         "domain": "officia do Lorem Ut non",
@@ -329,7 +330,86 @@ publish to crawler queue: normal, request: curl --location 'https://m.cafef.vn/d
 # output: "Đường dẫn" is required <= 50 characters
 ```
 
+## 4.3 Input validation by custome rules
 
+```bash
+# allow values list
+# config:
+"method": {
+    {
+        AllowedValues: []string{"GET", "POST"},
+    },
+},
+# request example
+{
+    "method": "PUT",
+}
+# output: Method: Giá trị không hợp lệ. Chỉ chấp nhận: ["GET", "POST"]
+
+# validate min number
+# config:
+"repeat_times": {
+    {
+        Operator: entity.OP_LTE,
+        Value:    "1",
+        ErrorMsg: "Số lần lặp tối thiểu >= 1",
+    }
+},
+# request example
+{
+    "repeat_times": "0",
+}
+# output: Số lần lặp tối thiểu >= 1
+
+# validate max number
+# config:
+"repeat_times": {
+    {
+        Operator: entity.OP_GT,
+        Value:    "1000",
+        ErrorMsg: "Số lần lặp tối thiểu  < 1000",
+    },
+},
+# request example
+{
+    "repeat_times": "2000",
+}
+# output: Số lần lặp tối thiểu  < 1000
+
+
+#  compare with another field
+# config:
+{
+    "scheduler_at": {
+    {
+        Field:    "next_run_time",
+        Operator: entity.OP_EQ,
+        ErrorMsg: "Thời gian trigger lần đầu phải trùng với next_run_time",
+    }
+}
+# request example
+{
+    "next_run_time": "1000",
+    "scheduler_at": "2000",
+}
+# output: Thời gian trigger lần đầu phải trùng với next_run_time
+
+
+# regex check pattern
+# config:
+{
+    "scheduler_at": {
+    {
+        Pattern:  `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$`,
+        ErrorMsg: "Thời gian trigger không đúng format",
+    },
+}
+# request example
+{
+    "scheduler_at": "2015-12-04:11:20:123456789",
+}
+# output: Thời gian trigger không đúng format
+```
 
 
 
