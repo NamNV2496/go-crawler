@@ -15,6 +15,7 @@ import (
 	"github.com/namnv2496/crawler/internal/entity"
 	"github.com/namnv2496/crawler/internal/pkg/logging"
 	"github.com/namnv2496/crawler/internal/repository"
+	"github.com/namnv2496/crawler/internal/repository/schedulerservice"
 	"github.com/namnv2496/crawler/internal/service/mq"
 	"github.com/temoto/robotstxt"
 	"golang.org/x/net/html"
@@ -30,14 +31,15 @@ type ICrawlerService interface {
 }
 
 type crawlerService struct {
-	maxDepth      int
-	visited       map[string]bool
-	mutex         sync.Mutex
-	results       map[string]string
-	teleService   ITeleService
-	resultRepo    repository.IResultRepository
-	workerPool    IWorkerPool
-	retryProducer mq.IAsynqProducer
+	maxDepth               int
+	visited                map[string]bool
+	mutex                  sync.Mutex
+	results                map[string]string
+	teleService            ITeleService
+	resultRepo             repository.IResultRepository
+	workerPool             IWorkerPool
+	retryProducer          mq.IAsynqProducer
+	schedulerServiceClient schedulerservice.ISchedulerService
 }
 
 // NewCrawler creates a new crawler instance
@@ -46,15 +48,17 @@ func NewCrawlerService(
 	resultRepo repository.IResultRepository,
 	workerPool IWorkerPool,
 	retryProducer mq.IAsynqProducer,
+	schedulerServiceClient schedulerservice.ISchedulerService,
 ) *crawlerService {
 	return &crawlerService{
-		maxDepth:      3,
-		visited:       make(map[string]bool),
-		results:       make(map[string]string),
-		teleService:   teleService,
-		resultRepo:    resultRepo,
-		workerPool:    workerPool,
-		retryProducer: retryProducer,
+		maxDepth:               3,
+		visited:                make(map[string]bool),
+		results:                make(map[string]string),
+		teleService:            teleService,
+		resultRepo:             resultRepo,
+		workerPool:             workerPool,
+		retryProducer:          retryProducer,
+		schedulerServiceClient: schedulerServiceClient,
 	}
 }
 
@@ -65,6 +69,7 @@ func (_self *crawlerService) Crawl(ctx context.Context, event entity.CrawlerEven
 	if !event.IsActive {
 		return nil
 	}
+	status := string(entity.StatusSuccessed)
 	err := _self.crawlPage(ctx, event, _self.maxDepth)
 	if err != nil {
 		// delay 5m if fail
@@ -72,7 +77,22 @@ func (_self *crawlerService) Crawl(ctx context.Context, event entity.CrawlerEven
 			event.Retrytime += 1
 			_self.retryProducer.EnqueueRetryEvent(ctx, event, time.Now().Add(5*time.Minute))
 		}
+		status = string(entity.StatusFailed)
 	}
+
+	// update status if it executed successfully
+	_self.schedulerServiceClient.UpdateSchedulerEvent(ctx, &entity.UpdateSchedulerEventRequest{
+		Id: fmt.Sprint(event.Id),
+		Event: &entity.SchedulerEvent{
+			Id:          fmt.Sprint(event.Id),
+			Url:         event.Url,
+			Method:      event.Method,
+			Description: event.Description,
+			Queue:       event.Queue,
+			Domain:      event.Domain,
+			Status:      status,
+		},
+	})
 	return nil
 }
 

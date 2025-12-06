@@ -9,6 +9,7 @@ import (
 	"github.com/namnv2496/crawler/internal/entity"
 	"github.com/namnv2496/crawler/internal/pkg/logging"
 	"github.com/namnv2496/crawler/internal/repository"
+	"github.com/namnv2496/crawler/internal/repository/schedulerservice"
 	"github.com/namnv2496/crawler/internal/service"
 	"github.com/namnv2496/crawler/internal/service/mq"
 	"github.com/segmentio/kafka-go"
@@ -42,6 +43,7 @@ func InvokeCrawlerWorker(invokers ...any) *fx.App {
 			fx.Annotate(service.NewWorkerPool, fx.As(new(service.IWorkerPool))),
 
 			fx.Annotate(mq.NewAsynqProducer, fx.As(new(mq.IAsynqProducer))),
+			fx.Annotate(schedulerservice.NewSchedulerService, fx.As(new(schedulerservice.ISchedulerService))),
 		),
 		fx.Supply(
 			config,

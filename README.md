@@ -23,13 +23,14 @@ A simple Job scheduler + web crawler written in Go that crawls websites and extr
 - Ratelimit: "github.com/go-redis/redis_rate/v9"
 - Cron job: "github.com/robfig/cron/v3"
 - Gorm: "gorm.io/gorm"
-- redisLock: "github.com/go-redsync/redsync/v4"
+- distributed locking: "github.com/go-redsync/redsync/v4"
 - logging: custom to add trace_id and prefix function
 - kafka: "github.com/segmentio/kafka-go"
 - redis: "github.com/go-redis/redis/v8"
 - telegram bot: "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 - robot txt: github.com/temoto/robotstxt
 - asynq: "github.com/hibiken/asynq" for delay retry if it met error
+- circuir breaker: "github.com/sony/gobreaker/v2"
 ```
 
 ## Logging example

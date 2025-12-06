@@ -41,9 +41,9 @@ func InvokeServer(invokers ...any) *fx.App {
 		fx.Provide(
 			fx.Annotate(repository.NewDatabase, fx.As(new(repository.IDatabase))),
 			// crawler event
-			fx.Annotate(repository.NewCrawlerEventRepository, fx.As(new(repository.ICrawlerEventRepository))),
-			fx.Annotate(service.NewCrawlerEventService, fx.As(new(service.ICrawlerEventService))),
-			fx.Annotate(controller.NewCrawlerEventController, fx.As(new(crawlerv1.CrawlerEventServiceServer))),
+			fx.Annotate(repository.NewSchedulerEventRepository, fx.As(new(repository.ISchedulerEventRepository))),
+			fx.Annotate(service.NewSchedulerEventService, fx.As(new(service.ISchedulerEventService))),
+			fx.Annotate(controller.NewSchedulerEventController, fx.As(new(crawlerv1.SchedulerEventServiceServer))),
 
 			fx.Annotate(startRateLimit, fx.As(new(utils.IRateLimit))),
 			fx.Annotate(internalvalidator.NewValidate, fx.As(new(internalvalidator.IValidate))),
@@ -59,7 +59,7 @@ func InvokeServer(invokers ...any) *fx.App {
 func startServer(
 	lc fx.Lifecycle,
 	config *configs.Config,
-	urlController crawlerv1.CrawlerEventServiceServer,
+	urlController crawlerv1.SchedulerEventServiceServer,
 ) error {
 	// start grpc
 	listener, err := net.Listen("tcp", config.AppConfig.GRPCPort)
@@ -77,7 +77,7 @@ func startServer(
 	}
 	server := grpc.NewServer(opts...)
 	reflection.Register(server)
-	crawlerv1.RegisterCrawlerEventServiceServer(server, urlController)
+	crawlerv1.RegisterSchedulerEventServiceServer(server, urlController)
 	fmt.Printf("gRPC server is running on %s\n", config.AppConfig.GRPCPort)
 	// start http
 	conn, err := grpc.NewClient(config.AppConfig.GRPCPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -86,13 +86,12 @@ func startServer(
 	}
 	defer conn.Close()
 	mux := runtime.NewServeMux()
-	if err := crawlerv1.RegisterCrawlerEventServiceHandler(context.Background(), mux, conn); err != nil {
+	if err := crawlerv1.RegisterSchedulerEventServiceHandler(context.Background(), mux, conn); err != nil {
 		return fmt.Errorf("failed to register handler: %v", err)
 	}
 	go func() {
 		fmt.Printf("HTTP server is running on %s\n", config.AppConfig.HTTPPort)
 		if err := http.ListenAndServe(config.AppConfig.HTTPPort, mux); err != nil {
-			fmt.Errorf("failed to start HTTP server: %s", err.Error())
 			panic("failed to start HTTP server")
 		}
 	}()

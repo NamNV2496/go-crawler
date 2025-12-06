@@ -1,6 +1,10 @@
 package configs
 
-import "github.com/caarlos0/env/v6"
+import (
+	"time"
+
+	"github.com/caarlos0/env/v6"
+)
 
 type AppConfig struct {
 	GRPCPort string   `env:"grpc_port" envDefault:":9090"`
@@ -29,6 +33,11 @@ type DatabaseConfig struct {
 	Schema   string `env:"SCHEMA" envDefault:"public"`
 }
 
+type SchedulerService struct {
+	Host    string        `env:"db_host" envDefault:"localhost:8080`
+	Timeout time.Duration `env:"timeout" envDefault:"5s"`
+}
+
 type Redis struct {
 	Addr     string `env:"redis_addr" envDefault:"localhost:6379"`
 	Password string `env:"redis_password" envDefault:""`
@@ -49,6 +58,7 @@ type Config struct {
 	DatabaseConfig      DatabaseConfig
 	Telegram            Telegram
 	Redis               Redis
+	SchedulerService    SchedulerService
 }
 
 func LoadConfig() *Config {

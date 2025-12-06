@@ -13,7 +13,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type CrawlerEvent struct {
+type SchedulerEvent struct {
 	Id          int64             `json:"id"`
 	Url         string            `json:"url"`
 	Method      string            `json:"method"`
@@ -30,7 +30,7 @@ type CrawlerEvent struct {
 	UpdatedAt   time.Time         `json:"updated_at"`
 }
 
-func (_self CrawlerEvent) HashKey(key any) string {
+func (_self SchedulerEvent) HashKey(key any) string {
 	hash, err := hashstructure.Hash(key, hashstructure.FormatV2, nil)
 	if err != nil {
 		fmt.Printf("failed to hash key: %v\n", err)
@@ -39,7 +39,7 @@ func (_self CrawlerEvent) HashKey(key any) string {
 
 }
 
-func (_self CrawlerEvent) Seriablize(key any) string {
+func (_self SchedulerEvent) Seriablize(key any) string {
 	data, err := json.Marshal(key)
 	if err != nil {
 		panic(err)
@@ -47,23 +47,23 @@ func (_self CrawlerEvent) Seriablize(key any) string {
 	return string(data)
 }
 
-func (_self CrawlerEvent) Deserialize(data any, output any) error {
+func (_self SchedulerEvent) Deserialize(data any, output any) error {
 	return json.Unmarshal([]byte(data.(string)), output)
 }
 
-func (_self CrawlerEvent) Incr(ctx context.Context, key any) *redis.IntCmd {
+func (_self SchedulerEvent) Incr(ctx context.Context, key any) *redis.IntCmd {
 	return nil
 }
 
-func (_self CrawlerEvent) Decr(ctx context.Context, key any) *redis.IntCmd {
+func (_self SchedulerEvent) Decr(ctx context.Context, key any) *redis.IntCmd {
 	return nil
 }
 
-func (_self CrawlerEvent) Expire(ctx context.Context, key any, expiredTime time.Duration) error {
+func (_self SchedulerEvent) Expire(ctx context.Context, key any, expiredTime time.Duration) error {
 	return nil
 }
 
-func (c CrawlerEvent) ToMap() map[string]string {
+func (c SchedulerEvent) ToMap() map[string]string {
 	result := make(map[string]string)
 	val := reflect.ValueOf(c)
 	typ := val.Type()

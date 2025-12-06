@@ -44,7 +44,7 @@ func NewDatabase(
 	// Set connection pool settings
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
-	db.AutoMigrate(&domain.CrawlerEvent{})
+	db.AutoMigrate(&domain.SchedulerEvent{})
 	return &Database{db: db}, nil
 }
 

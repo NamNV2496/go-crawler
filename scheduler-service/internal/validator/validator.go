@@ -17,9 +17,9 @@ import (
 )
 
 type IValidate interface {
-	ValidateRequire(ctx context.Context, action string, req *entity.CrawlerEvent) error
-	ValidateValue(ctx context.Context, req *entity.CrawlerEvent) error
-	ValidateCustomeRules(newEvent *entity.CrawlerEvent) error
+	ValidateRequire(ctx context.Context, action string, eventMap map[string]string) error
+	ValidateValue(ctx context.Context, eventMap map[string]string) error
+	ValidateCustomeRules(eventMap map[string]string) error
 }
 
 type Validate struct {
@@ -36,7 +36,7 @@ func NewValidate() *Validate {
 	}
 }
 
-func (_self *Validate) ValidateRequire(ctx context.Context, action string, req *entity.CrawlerEvent) error {
+func (_self *Validate) ValidateRequire(ctx context.Context, action string, eventMap map[string]string) error {
 	var requireByAction map[string]entity.FieldRequireCondition
 	var exist bool
 	requireByAction, exist = _self.requireByActions[action]
@@ -48,13 +48,13 @@ func (_self *Validate) ValidateRequire(ctx context.Context, action string, req *
 		_self.requireByActions = requires
 		requireByAction = _self.requireByActions[action]
 	}
-	if err := validateRequireEventInfo(req, requireByAction); err != nil {
+	if err := validateRequireEventInfo(eventMap, requireByAction); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (_self *Validate) ValidateValue(ctx context.Context, req *entity.CrawlerEvent) error {
+func (_self *Validate) ValidateValue(ctx context.Context, eventMap map[string]string) error {
 	if len(_self.validateByActions) == 0 {
 		requires, err := getRules()
 		if err != nil {
@@ -62,16 +62,15 @@ func (_self *Validate) ValidateValue(ctx context.Context, req *entity.CrawlerEve
 		}
 		_self.validateByActions = requires
 	}
-	if err := validateValueEventInfo(req, _self.validateByActions); err != nil {
+	if err := validateValueEventInfo(eventMap, _self.validateByActions); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (_self *Validate) ValidateCustomeRules(newEvent *entity.CrawlerEvent) error {
-	eventFields := newEvent.ToMap()
-	for paramName, value := range eventFields {
-		if err := _self.validateCustomeRules(paramName, value, eventFields); err != nil {
+func (_self *Validate) ValidateCustomeRules(eventMap map[string]string) error {
+	for paramName, value := range eventMap {
+		if err := _self.validateCustomeRules(paramName, value, eventMap); err != nil {
 			return err
 		}
 	}
@@ -218,8 +217,7 @@ func getRules() (map[string]entity.FieldValidation, error) {
 	return requirements, nil
 }
 
-func validateRequireEventInfo(event *entity.CrawlerEvent, rules map[string]entity.FieldRequireCondition) error {
-	eventMap := event.ToMap()
+func validateRequireEventInfo(eventMap map[string]string, rules map[string]entity.FieldRequireCondition) error {
 	for paramName, requireCondition := range rules {
 		if err := validateRequireField(eventMap, paramName, requireCondition); err != nil {
 			return err
@@ -248,8 +246,7 @@ func validateRequireField(eventMap map[string]string, paramName string, requireC
 	return nil
 }
 
-func validateValueEventInfo(event *entity.CrawlerEvent, valueCondition map[string]entity.FieldValidation) error {
-	eventMap := event.ToMap()
+func validateValueEventInfo(eventMap map[string]string, valueCondition map[string]entity.FieldValidation) error {
 	for paramName, condition := range valueCondition {
 		if err := validateFieldValue(eventMap, paramName, condition); err != nil {
 			return err

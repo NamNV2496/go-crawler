@@ -29,7 +29,7 @@ func InvokeSchedulerWorker(invokers ...any) *fx.App {
 		fx.StopTimeout(time.Second*10),
 		fx.Provide(
 			fx.Annotate(repository.NewDatabase, fx.As(new(repository.IDatabase))),
-			fx.Annotate(repository.NewCrawlerEventRepository, fx.As(new(repository.ICrawlerEventRepository))),
+			fx.Annotate(repository.NewSchedulerEventRepository, fx.As(new(repository.ISchedulerEventRepository))),
 			// MQ
 			fx.Annotate(mq.NewKafkaProducer, fx.As(new(mq.IProducer))),
 			fx.Annotate(service.NewUrlCronJob, fx.As(new(service.ICrawlerCronJob))),

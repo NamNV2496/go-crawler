@@ -15,51 +15,51 @@ import (
 
 	// Import service
 
-	crawlerv1 "github.com/namnv2496/scheduler/pkg/generated/pkg/proto"
+	schedulerv1 "github.com/namnv2496/scheduler/pkg/generated/pkg/proto"
 	"github.com/namnv2496/scheduler/pkg/logging"
 	"github.com/namnv2496/scheduler/pkg/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-type CrawlerEventController struct {
-	crawlerv1.UnimplementedCrawlerEventServiceServer
-	crawlerEventService service.ICrawlerEventService
-	ratelimter          utils.IRateLimit
-	internalvalidator   internalvalidator.IValidate
+type SchedulerEventController struct {
+	schedulerv1.UnimplementedSchedulerEventServiceServer
+	SchedulerEventService service.ISchedulerEventService
+	ratelimter            utils.IRateLimit
+	internalvalidator     internalvalidator.IValidate
 }
 
-func NewCrawlerEventController(
-	crawlerEventService service.ICrawlerEventService,
+func NewSchedulerEventController(
+	SchedulerEventService service.ISchedulerEventService,
 	ratelimter utils.IRateLimit,
 	internalvalidator internalvalidator.IValidate,
-) crawlerv1.CrawlerEventServiceServer {
-	return &CrawlerEventController{
-		crawlerEventService: crawlerEventService,
-		ratelimter:          ratelimter,
-		internalvalidator:   internalvalidator,
+) schedulerv1.SchedulerEventServiceServer {
+	return &SchedulerEventController{
+		SchedulerEventService: SchedulerEventService,
+		ratelimter:            ratelimter,
+		internalvalidator:     internalvalidator,
 	}
 }
 
-func (_self *CrawlerEventController) CreateCrawlerEvent(
+func (_self *SchedulerEventController) CreateSchedulerEvent(
 	ctx context.Context,
-	req *crawlerv1.CreateCrawlerEventRequest,
-) (*crawlerv1.CreateCrawlerEventResponse, error) {
+	req *schedulerv1.CreateSchedulerEventRequest,
+) (*schedulerv1.CreateSchedulerEventResponse, error) {
 	ctx = logging.InjectTraceId(ctx)
 	logging.SetName("scheduler")
-	ctx = logging.ResetPrefix(ctx, "CreateCrawlerEvent")
+	ctx = logging.ResetPrefix(ctx, "CreateSchedulerEvent")
 
-	logging.Infof(ctx, "CreateCrawlerEvent is called before")
+	logging.Infof(ctx, "CreateSchedulerEvent is called before")
 	// // rate limit
 	if err := _self.checkInserRateLimit(ctx, req.Event.Id); err != nil {
 		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %v", err)
 	}
 
-	logging.Infof(ctx, "CreateCrawlerEvent is called after")
+	logging.Infof(ctx, "CreateSchedulerEvent is called after")
 	if req == nil || req.Event == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request or url is nil")
 	}
-	newEvent := &entity.CrawlerEvent{
+	newEvent := &entity.SchedulerEvent{
 		Url:         req.Event.Url,
 		Method:      req.Event.Method,
 		Description: req.Event.Description,
@@ -74,38 +74,38 @@ func (_self *CrawlerEventController) CreateCrawlerEvent(
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
-
-	if err := _self.internalvalidator.ValidateRequire(ctx, "insert", newEvent); err != nil {
+	eventFields := newEvent.ToMap()
+	if err := _self.internalvalidator.ValidateRequire(ctx, "insert", eventFields); err != nil {
 		return nil, err
 	}
 
-	if err := _self.internalvalidator.ValidateValue(ctx, newEvent); err != nil {
+	if err := _self.internalvalidator.ValidateValue(ctx, eventFields); err != nil {
 		return nil, err
 	}
-	if err := _self.internalvalidator.ValidateCustomeRules(newEvent); err != nil {
+	if err := _self.internalvalidator.ValidateCustomeRules(eventFields); err != nil {
 		return nil, err
 	}
 
-	id, err := _self.crawlerEventService.CreateCrawlerEvent(ctx, newEvent)
+	id, err := _self.SchedulerEventService.CreateSchedulerEvent(ctx, newEvent)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create url: %v", err)
 	}
 
-	return &crawlerv1.CreateCrawlerEventResponse{
+	return &schedulerv1.CreateSchedulerEventResponse{
 		Id:     strconv.FormatInt(id, 10),
 		Status: strconv.Itoa(http.StatusCreated),
 	}, nil
 }
 
-func (_self *CrawlerEventController) GetCrawlerEvents(
+func (_self *SchedulerEventController) GetSchedulerEvents(
 	ctx context.Context,
-	req *crawlerv1.GetCrawlerEventsRequest,
-) (*crawlerv1.GetCrawlerEventsResponse, error) {
+	req *schedulerv1.GetSchedulerEventsRequest,
+) (*schedulerv1.GetSchedulerEventsResponse, error) {
 	ctx = logging.InjectTraceId(ctx)
 	logging.SetName("scheduler")
-	ctx = logging.ResetPrefix(ctx, "GetCrawlerEvents")
+	ctx = logging.ResetPrefix(ctx, "GetSchedulerEvents")
 
-	logging.Infof(ctx, "GetCrawlerEvents is called")
+	logging.Infof(ctx, "GetSchedulerEvents is called")
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request is nil")
 	}
@@ -117,14 +117,14 @@ func (_self *CrawlerEventController) GetCrawlerEvents(
 		req.Limit = 20
 	}
 
-	events, err := _self.crawlerEventService.GetCrawlerEvents(ctx, req.Limit, req.Offset)
+	events, err := _self.SchedulerEventService.GetSchedulerEvents(ctx, req.Limit, req.Offset)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get urls: %v", err)
 	}
 
-	crawlerEvents := make([]*crawlerv1.CrawlerEvent, len(events))
+	SchedulerEvents := make([]*schedulerv1.SchedulerEvent, len(events))
 	for i, event := range events {
-		crawlerEvents[i] = &crawlerv1.CrawlerEvent{
+		SchedulerEvents[i] = &schedulerv1.SchedulerEvent{
 			Id:          fmt.Sprintf("%d", event.Id),
 			Url:         event.Url,
 			Method:      event.Method,
@@ -140,17 +140,17 @@ func (_self *CrawlerEventController) GetCrawlerEvents(
 			UpdatedAt:   event.UpdatedAt.String(),
 		}
 	}
-	return &crawlerv1.GetCrawlerEventsResponse{
-		Events: crawlerEvents,
+	return &schedulerv1.GetSchedulerEventsResponse{
+		Events: SchedulerEvents,
 	}, nil
 }
 
-func (_self *CrawlerEventController) UpdateCrawlerEvent(
+func (_self *SchedulerEventController) UpdateSchedulerEvent(
 	ctx context.Context,
-	req *crawlerv1.UpdateCrawlerEventRequest,
-) (*crawlerv1.UpdateCrawlerEventResponse, error) {
+	req *schedulerv1.UpdateSchedulerEventRequest,
+) (*schedulerv1.UpdateSchedulerEventResponse, error) {
 	ctx = logging.InjectTraceId(ctx)
-	ctx = logging.ResetPrefix(ctx, "UpdateCrawlerEvent")
+	ctx = logging.ResetPrefix(ctx, "UpdateSchedulerEvent")
 	if req == nil || req.Event == nil || req.Id == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "request, url, or id is nil/empty")
 	}
@@ -158,7 +158,7 @@ func (_self *CrawlerEventController) UpdateCrawlerEvent(
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid ID format")
 	}
-	domainUrl := &entity.CrawlerEvent{
+	domainUrl := &entity.SchedulerEvent{
 		Id:          id,
 		Url:         req.Event.Url,
 		Method:      req.Event.Method,
@@ -173,7 +173,7 @@ func (_self *CrawlerEventController) UpdateCrawlerEvent(
 		CronExp:     req.Event.CronExp,
 	}
 
-	err = _self.crawlerEventService.UpdateCrawlerEvent(ctx, id, domainUrl)
+	err = _self.SchedulerEventService.UpdateSchedulerEvent(ctx, id, domainUrl)
 	if err != nil {
 		if errors.Is(err, errors.New("url not found")) { // Check for specific error from repository/service
 			return nil, status.Errorf(codes.NotFound, "url with ID %s not found", req.Id)
@@ -181,13 +181,13 @@ func (_self *CrawlerEventController) UpdateCrawlerEvent(
 		return nil, status.Errorf(codes.Internal, "failed to update url: %v", err)
 	}
 
-	return &crawlerv1.UpdateCrawlerEventResponse{
+	return &schedulerv1.UpdateSchedulerEventResponse{
 		Id:     req.Id,
 		Status: "updated",
 	}, nil
 }
 
-func (_self *CrawlerEventController) checkRateLimit(ctx context.Context, key string) error {
+func (_self *SchedulerEventController) checkRateLimit(ctx context.Context, key string) error {
 	// rate limit 10 request/ minute
 	pass, err := _self.ratelimter.Allow(ctx, "query_url", key, utils.LimitPerMinute(10, 1))
 	if err != nil {
@@ -199,7 +199,7 @@ func (_self *CrawlerEventController) checkRateLimit(ctx context.Context, key str
 	return nil
 }
 
-func (_self *CrawlerEventController) checkInserRateLimit(ctx context.Context, key string) error {
+func (_self *SchedulerEventController) checkInserRateLimit(ctx context.Context, key string) error {
 	ctx = logging.AppendPrefix(ctx, "checkInserRateLimit")
 
 	logging.Infof(ctx, "rate limit is called")
@@ -216,13 +216,13 @@ func (_self *CrawlerEventController) checkInserRateLimit(ctx context.Context, ke
 	return nil
 }
 
-func (_self *CrawlerEventController) UpdateEventStatus(ctx context.Context, req *crawlerv1.UpdateEventStatusRequest) (*crawlerv1.UpdateEventStatusResponse, error) {
+func (_self *SchedulerEventController) UpdateEventStatus(ctx context.Context, req *schedulerv1.UpdateEventStatusRequest) (*schedulerv1.UpdateEventStatusResponse, error) {
 	ctx = logging.InjectTraceId(ctx)
 	logging.ResetPrefix(ctx, "UpdateEventStatus")
 	logging.Infof(ctx, "update status of event: %s", req)
-	err := _self.crawlerEventService.UpdateEventStatus(ctx, req.Id, domain.StatusEnum(req.Status))
+	err := _self.SchedulerEventService.UpdateEventStatus(ctx, req.Id, domain.StatusEnum(req.Status))
 	if err != nil {
 		return nil, err
 	}
-	return &crawlerv1.UpdateEventStatusResponse{}, nil
+	return &schedulerv1.UpdateEventStatusResponse{}, nil
 }

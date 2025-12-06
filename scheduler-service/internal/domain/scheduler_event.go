@@ -31,7 +31,7 @@ func GetStatusEnum(status string) StatusEnum {
 	}
 }
 
-type CrawlerEvent struct {
+type SchedulerEvent struct {
 	Id          int64      `gorm:"column:id;primaryKey" json:"id"`
 	Url         string     `gorm:"column:url;type:text" json:"url"`
 	Method      string     `gorm:"column:method;type:text" json:"method"`
@@ -49,6 +49,6 @@ type CrawlerEvent struct {
 	UpdatedAt time.Time `gorm:"column:updated_at" json:"updated_at"`
 }
 
-func (u CrawlerEvent) TableName() string {
-	return "crawler_events"
+func (u SchedulerEvent) TableName() string {
+	return "scheduler_events"
 }

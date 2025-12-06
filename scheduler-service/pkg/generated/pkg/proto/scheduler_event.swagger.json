@@ -1,12 +1,12 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "pkg/proto/crawler_event.proto",
+    "title": "pkg/proto/scheduler_event.proto",
     "version": "version not set"
   },
   "tags": [
     {
-      "name": "CrawlerEventService"
+      "name": "SchedulerEventService"
     }
   ],
   "consumes": [
@@ -18,12 +18,12 @@
   "paths": {
     "/api/v1/event": {
       "post": {
-        "operationId": "CrawlerEventService_CreateCrawlerEvent",
+        "operationId": "SchedulerEventService_CreateSchedulerEvent",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1CreateCrawlerEventResponse"
+              "$ref": "#/definitions/v1CreateSchedulerEventResponse"
             }
           },
           "default": {
@@ -39,23 +39,23 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/v1CreateCrawlerEventRequest"
+              "$ref": "#/definitions/v1CreateSchedulerEventRequest"
             }
           }
         ],
         "tags": [
-          "CrawlerEventService"
+          "SchedulerEventService"
         ]
       }
     },
     "/api/v1/events": {
       "get": {
-        "operationId": "CrawlerEventService_GetCrawlerEvents",
+        "operationId": "SchedulerEventService_GetSchedulerEvents",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1GetCrawlerEventsResponse"
+              "$ref": "#/definitions/v1GetSchedulerEventsResponse"
             }
           },
           "default": {
@@ -82,13 +82,13 @@
           }
         ],
         "tags": [
-          "CrawlerEventService"
+          "SchedulerEventService"
         ]
       }
     },
     "/api/v1/events/status": {
       "post": {
-        "operationId": "CrawlerEventService_UpdateEventStatus",
+        "operationId": "SchedulerEventService_UpdateEventStatus",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -114,18 +114,18 @@
           }
         ],
         "tags": [
-          "CrawlerEventService"
+          "SchedulerEventService"
         ]
       }
     },
     "/api/v1/events/{id}": {
       "put": {
-        "operationId": "CrawlerEventService_UpdateCrawlerEvent",
+        "operationId": "SchedulerEventService_UpdateSchedulerEvent",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1UpdateCrawlerEventResponse"
+              "$ref": "#/definitions/v1UpdateSchedulerEventResponse"
             }
           },
           "default": {
@@ -147,22 +147,22 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/CrawlerEventServiceUpdateCrawlerEventBody"
+              "$ref": "#/definitions/SchedulerEventServiceUpdateSchedulerEventBody"
             }
           }
         ],
         "tags": [
-          "CrawlerEventService"
+          "SchedulerEventService"
         ]
       }
     }
   },
   "definitions": {
-    "CrawlerEventServiceUpdateCrawlerEventBody": {
+    "SchedulerEventServiceUpdateSchedulerEventBody": {
       "type": "object",
       "properties": {
         "event": {
-          "$ref": "#/definitions/v1CrawlerEvent"
+          "$ref": "#/definitions/v1SchedulerEvent"
         }
       }
     },
@@ -194,7 +194,38 @@
         }
       }
     },
-    "v1CrawlerEvent": {
+    "v1CreateSchedulerEventRequest": {
+      "type": "object",
+      "properties": {
+        "event": {
+          "$ref": "#/definitions/v1SchedulerEvent"
+        }
+      }
+    },
+    "v1CreateSchedulerEventResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "v1GetSchedulerEventsResponse": {
+      "type": "object",
+      "properties": {
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1SchedulerEvent"
+          }
+        }
+      }
+    },
+    "v1SchedulerEvent": {
       "type": "object",
       "properties": {
         "id": {
@@ -244,48 +275,6 @@
         }
       }
     },
-    "v1CreateCrawlerEventRequest": {
-      "type": "object",
-      "properties": {
-        "event": {
-          "$ref": "#/definitions/v1CrawlerEvent"
-        }
-      }
-    },
-    "v1CreateCrawlerEventResponse": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "status": {
-          "type": "string"
-        }
-      }
-    },
-    "v1GetCrawlerEventsResponse": {
-      "type": "object",
-      "properties": {
-        "events": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/v1CrawlerEvent"
-          }
-        }
-      }
-    },
-    "v1UpdateCrawlerEventResponse": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "status": {
-          "type": "string"
-        }
-      }
-    },
     "v1UpdateEventStatusRequest": {
       "type": "object",
       "properties": {
@@ -301,6 +290,17 @@
     "v1UpdateEventStatusResponse": {
       "type": "object",
       "properties": {
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "v1UpdateSchedulerEventResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
         "status": {
           "type": "string"
         }

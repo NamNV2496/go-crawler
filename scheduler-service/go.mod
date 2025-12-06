@@ -17,6 +17,7 @@ require (
 	github.com/segmentio/kafka-go v0.4.48
 	github.com/spf13/cobra v1.9.1
 	go.uber.org/fx v1.24.0
+	go.uber.org/zap v1.26.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250519155744-55703ea1f237
 	google.golang.org/grpc v1.72.1
 	google.golang.org/protobuf v1.36.6
@@ -41,7 +42,6 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	go.uber.org/dig v1.19.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
-	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sync v0.14.0 // indirect

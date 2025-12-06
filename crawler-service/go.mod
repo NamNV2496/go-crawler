@@ -10,6 +10,7 @@ require (
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/redis/go-redis/v9 v9.10.0
 	github.com/segmentio/kafka-go v0.4.48
+	github.com/sony/gobreaker/v2 v2.3.0
 	github.com/spf13/cobra v1.9.1
 	github.com/temoto/robotstxt v1.1.2
 	go.uber.org/fx v1.24.0

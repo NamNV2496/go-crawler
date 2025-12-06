@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package crawler.v1;
+package scheduler.v1;
 
 import "google/api/annotations.proto";
 
-message CrawlerEvent {
+message SchedulerEvent {
     string id = 1;
     string url = 2;
     string method = 3;
@@ -21,26 +21,26 @@ message CrawlerEvent {
     string updated_at = 14;
 }
 
-message CreateCrawlerEventRequest {
-	CrawlerEvent event = 1;
+message CreateSchedulerEventRequest {
+	SchedulerEvent event = 1;
 }
-message CreateCrawlerEventResponse {
+message CreateSchedulerEventResponse {
 	string id = 1;
     string status = 2;
 }
-message GetCrawlerEventsRequest {
+message GetSchedulerEventsRequest {
     int32 limit = 1;
     int32 offset = 2;
 }
-message GetCrawlerEventsResponse {
-    repeated CrawlerEvent events = 1;
+message GetSchedulerEventsResponse {
+    repeated SchedulerEvent events = 1;
 }
 
-message UpdateCrawlerEventRequest {
+message UpdateSchedulerEventRequest {
     string id = 1;
-    CrawlerEvent event = 2;
+    SchedulerEvent event = 2;
 }
-message UpdateCrawlerEventResponse {
+message UpdateSchedulerEventResponse {
     string id = 1;
     string status = 2;
 }
@@ -53,19 +53,19 @@ message UpdateEventStatusResponse {
     string status = 1;
 }
 
-service CrawlerEventService {
-    rpc CreateCrawlerEvent(CreateCrawlerEventRequest) returns (CreateCrawlerEventResponse) {
+service SchedulerEventService {
+    rpc CreateSchedulerEvent(CreateSchedulerEventRequest) returns (CreateSchedulerEventResponse) {
         option (google.api.http) = {
 			post: "/api/v1/event"
             body: "*"
 		};
     }
-    rpc GetCrawlerEvents(GetCrawlerEventsRequest) returns (GetCrawlerEventsResponse) {
+    rpc GetSchedulerEvents(GetSchedulerEventsRequest) returns (GetSchedulerEventsResponse) {
         option (google.api.http) = {
 			get: "/api/v1/events"
 		};
     }
-    rpc UpdateCrawlerEvent(UpdateCrawlerEventRequest) returns (UpdateCrawlerEventResponse) {
+    rpc UpdateSchedulerEvent(UpdateSchedulerEventRequest) returns (UpdateSchedulerEventResponse) {
         option (google.api.http) = {
 			put: "/api/v1/events/{id}"
             body: "*"

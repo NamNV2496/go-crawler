@@ -2,7 +2,7 @@ buf:
 	buf def update
 
 generate:
-	buf generate
+	buf generate --template buf.gen.yaml 
 
 service:
 	go run main.go server
