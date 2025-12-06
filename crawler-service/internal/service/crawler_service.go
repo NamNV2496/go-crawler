@@ -9,11 +9,13 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/namnv2496/crawler/internal/domain"
 	"github.com/namnv2496/crawler/internal/entity"
 	"github.com/namnv2496/crawler/internal/pkg/logging"
 	"github.com/namnv2496/crawler/internal/repository"
+	"github.com/namnv2496/crawler/internal/service/mq"
 	"github.com/temoto/robotstxt"
 	"golang.org/x/net/html"
 )
@@ -27,14 +29,15 @@ type ICrawlerService interface {
 	Crawl(ctx context.Context, url entity.CrawlerEvent) error
 }
 
-type CrawlerService struct {
-	maxDepth    int
-	visited     map[string]bool
-	mutex       sync.Mutex
-	results     map[string]string
-	teleService ITeleService
-	resultRepo  repository.IResultRepository
-	workerPool  IWorkerPool
+type crawlerService struct {
+	maxDepth      int
+	visited       map[string]bool
+	mutex         sync.Mutex
+	results       map[string]string
+	teleService   ITeleService
+	resultRepo    repository.IResultRepository
+	workerPool    IWorkerPool
+	retryProducer mq.IAsynqProducer
 }
 
 // NewCrawler creates a new crawler instance
@@ -42,32 +45,38 @@ func NewCrawlerService(
 	teleService ITeleService,
 	resultRepo repository.IResultRepository,
 	workerPool IWorkerPool,
-) *CrawlerService {
-	return &CrawlerService{
-		maxDepth:    3,
-		visited:     make(map[string]bool),
-		results:     make(map[string]string),
-		teleService: teleService,
-		resultRepo:  resultRepo,
-		workerPool:  workerPool,
+	retryProducer mq.IAsynqProducer,
+) *crawlerService {
+	return &crawlerService{
+		maxDepth:      3,
+		visited:       make(map[string]bool),
+		results:       make(map[string]string),
+		teleService:   teleService,
+		resultRepo:    resultRepo,
+		workerPool:    workerPool,
+		retryProducer: retryProducer,
 	}
 }
 
 // Crawl starts crawling from the given URL up to the maximum depth
-func (_self *CrawlerService) Crawl(ctx context.Context, url entity.CrawlerEvent) error {
+func (_self *crawlerService) Crawl(ctx context.Context, event entity.CrawlerEvent) error {
 	deferFunc := logging.AppendPrefix("Crawl")
 	defer deferFunc()
-	if !url.IsActive {
+	if !event.IsActive {
 		return nil
 	}
-	err := _self.crawlPage(ctx, url, _self.maxDepth)
+	err := _self.crawlPage(ctx, event, _self.maxDepth)
 	if err != nil {
-		return err
+		// delay 5m if fail
+		if event.Retrytime < 3 {
+			event.Retrytime += 1
+			_self.retryProducer.EnqueueRetryEvent(ctx, event, time.Now().Add(5*time.Minute))
+		}
 	}
 	return nil
 }
 
-func (_self *CrawlerService) crawlPage(ctx context.Context, url entity.CrawlerEvent, depth int) error {
+func (_self *crawlerService) crawlPage(ctx context.Context, url entity.CrawlerEvent, depth int) error {
 	deferFunc := logging.AppendPrefix("crawlPage")
 	defer deferFunc()
 	if depth > _self.maxDepth {
@@ -109,7 +118,7 @@ func (_self *CrawlerService) crawlPage(ctx context.Context, url entity.CrawlerEv
 	return nil
 }
 
-func (_self *CrawlerService) crawlRobotFile(_ context.Context, url entity.CrawlerEvent, depth int) (string, error) {
+func (_self *crawlerService) crawlRobotFile(_ context.Context, url entity.CrawlerEvent, depth int) (string, error) {
 	if !isValidURL(url.Url) {
 		return "", nil
 	}
@@ -134,7 +143,7 @@ func (_self *CrawlerService) crawlRobotFile(_ context.Context, url entity.Crawle
 	return "", nil
 }
 
-func (_self *CrawlerService) crawlGET(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
+func (_self *crawlerService) crawlGET(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
 	if !isValidURL(url.Url) {
 		return "", nil
 	}
@@ -157,7 +166,7 @@ func (_self *CrawlerService) crawlGET(ctx context.Context, url entity.CrawlerEve
 	return doc.Data, nil
 }
 
-func (_self *CrawlerService) crawlPOST(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
+func (_self *crawlerService) crawlPOST(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
 	if !isValidURL(url.Url) {
 		return "", nil
 	}
@@ -180,7 +189,7 @@ func (_self *CrawlerService) crawlPOST(ctx context.Context, url entity.CrawlerEv
 	return doc.Data, nil
 }
 
-func (_self *CrawlerService) crawlCurl(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
+func (_self *crawlerService) crawlCurl(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
 	deferFunc := logging.AppendPrefix("crawlPage")
 	defer deferFunc()
 	// Parse the curl command string
@@ -210,7 +219,7 @@ func (_self *CrawlerService) crawlCurl(ctx context.Context, url entity.CrawlerEv
 	cmd := exec.Command("curl", args...)
 	var output []byte
 	var err error
-	_self.workerPool.Crawl(
+	_self.workerPool.Execute(
 		func() (any, error) {
 			var cmdOutput []byte
 			cmdOutput, err = cmd.Output()
@@ -224,7 +233,7 @@ func (_self *CrawlerService) crawlCurl(ctx context.Context, url entity.CrawlerEv
 				err = cmdErr // Propagate error to outer scope
 				return
 			}
-			if err = _self.teleService.SendMessage(ExtractGoldPrice(output), "text"); err != nil {
+			if err = _self.teleService.SendMessage(entity.ExtractGoldPrice(output), "text"); err != nil {
 				logging.Error(ctx, "send price error: %s", err.Error())
 			}
 			// write result to db
@@ -249,7 +258,7 @@ func (_self *CrawlerService) crawlCurl(ctx context.Context, url entity.CrawlerEv
 	return resp, nil
 }
 
-func (_self *CrawlerService) handleRobotFile(bodyBytes []byte) error {
+func (_self *crawlerService) handleRobotFile(bodyBytes []byte) error {
 	// parsing robot.txt
 	robots, err := robotstxt.FromBytes(bodyBytes)
 	if err != nil {

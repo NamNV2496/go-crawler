@@ -82,12 +82,16 @@ func getPrefix(ctx context.Context) string {
 }
 
 // ===== log funcs =====
-func Info(ctx context.Context, args ...any) {
+func Infof(ctx context.Context, template string, args ...any) {
 	prefix := getPrefix(ctx)
-	getLogger(ctx).Info(prefix + fmt.Sprint(args...))
+	getLogger(ctx).Infof(prefix + fmt.Sprintf(template, args...))
 }
 
+func Debugf(ctx context.Context, template string, args ...any) {
+	prefix := getPrefix(ctx)
+	getLogger(ctx).Debugf(prefix + fmt.Sprintf(template, args...))
+}
 func Errorf(ctx context.Context, template string, args ...any) {
 	prefix := getPrefix(ctx)
-	getLogger(ctx).Errorf(prefix+template, args...)
+	getLogger(ctx).Errorf(prefix + fmt.Sprintf(template, args...))
 }

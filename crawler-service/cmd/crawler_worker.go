@@ -40,6 +40,8 @@ func InvokeCrawlerWorker(invokers ...any) *fx.App {
 			fx.Annotate(repository.NewDatabase, fx.As(new(repository.IDatabase))),
 			fx.Annotate(repository.NewResultRepository, fx.As(new(repository.IResultRepository))),
 			fx.Annotate(service.NewWorkerPool, fx.As(new(service.IWorkerPool))),
+
+			fx.Annotate(mq.NewAsynqProducer, fx.As(new(mq.IAsynqProducer))),
 		),
 		fx.Supply(
 			config,

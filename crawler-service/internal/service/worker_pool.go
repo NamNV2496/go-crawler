@@ -9,10 +9,10 @@ import (
 )
 
 type IWorkerPool interface {
-	Crawl(crawlFunc func() (any, error), depth int, statscallback StatsCallback, outputCallback OuputCallback)
+	Execute(crawlFunc func() (any, error), depth int, statscallback StatsCallback, outputCallback OuputCallback)
 }
 
-type WorkerPool struct {
+type workerPool struct {
 	workers       int
 	pagesCrawled  atomic.Int32
 	activeWorkers atomic.Int32
@@ -26,14 +26,14 @@ type OuputCallback func(output any, err error)
 
 func NewWorkerPool(
 	conf *configs.Config,
-) *WorkerPool {
-	return &WorkerPool{
+) IWorkerPool {
+	return &workerPool{
 		workers: conf.AppConfig.Workers,
 		queue:   make(chan func() (any, error), 1000),
 	}
 }
 
-func (_self *WorkerPool) Crawl(crawlFunc func() (any, error), depth int, statscallback StatsCallback, outputCallback OuputCallback) {
+func (_self *workerPool) Execute(crawlFunc func() (any, error), depth int, statscallback StatsCallback, outputCallback OuputCallback) {
 	// Initialize the pool
 	_self.queue <- crawlFunc
 	_self.queueSize.Add(1)
@@ -51,7 +51,7 @@ func (_self *WorkerPool) Crawl(crawlFunc func() (any, error), depth int, statsca
 	}()
 }
 
-func (_self *WorkerPool) worker(depth int, statscallback StatsCallback, outputCallback OuputCallback) {
+func (_self *workerPool) worker(depth int, statscallback StatsCallback, outputCallback OuputCallback) {
 	defer _self.waitGroup.Done()
 
 	for urlExecute := range _self.queue {

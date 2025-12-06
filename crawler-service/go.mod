@@ -6,6 +6,7 @@ require (
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/google/uuid v1.6.0
+	github.com/hibiken/asynq v0.25.1
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/redis/go-redis/v9 v9.10.0
 	github.com/segmentio/kafka-go v0.4.48
@@ -29,6 +30,8 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
+	github.com/robfig/cron/v3 v3.0.1 // indirect
+	github.com/spf13/cast v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
 	go.uber.org/dig v1.19.0 // indirect
@@ -38,4 +41,6 @@ require (
 	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/time v0.8.0 // indirect
+	google.golang.org/protobuf v1.35.2 // indirect
 )

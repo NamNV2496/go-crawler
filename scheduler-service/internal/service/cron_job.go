@@ -59,7 +59,7 @@ func (_self *CrawlerCronJob) Start() error {
 		_self.ExecuteEvent(ctx),
 	)
 	logging.ResetPrefix(ctx, "Start")
-	logging.Info(ctx, "Cron job queue %s, every 1 minutes is started", entity.QueueTypeNormal)
+	logging.Infof(ctx, "Cron job queue %s, every 1 minutes is started", entity.QueueTypeNormal)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (_self *CrawlerCronJob) ExecuteEvent(ctx context.Context) func() {
 	ctx = logging.AppendPrefix(ctx, "ExecuteEvent")
 
 	return func() {
-		logging.Info(ctx, "Acquire and execute event")
+		logging.Infof(ctx, "Acquire and execute event")
 		now := time.Now().UnixMilli()
 		events, err := _self.crawlerEventRepo.GetCrawlerEventByStatusAndSchedulerAt(ctx, domain.StatusPending, now)
 		if err != nil {
@@ -133,7 +133,7 @@ func (_self *CrawlerCronJob) ExecuteEvent(ctx context.Context) func() {
 			updateEvents = append(updateEvents, event)
 		}
 
-		logging.Info(ctx, "update events: %d", len(updateEvents))
+		logging.Infof(ctx, "update events: %d", len(updateEvents))
 		if err := _self.crawlerEventRepo.Updates(ctx, updateEvents); err != nil {
 			logging.Errorf(ctx, "error update events: %s", err)
 		}
@@ -146,7 +146,7 @@ func (_self *CrawlerCronJob) publishToCrawler(ctx context.Context, eventData ent
 	err := _self.producers.Publish(ctx, eventData.Queue, strconv.Itoa(int(eventData.Id)), eventData)
 	if err != nil {
 		// Can apply retry at here
-		logging.Info(ctx, "Publish message to kafka failed: %+v, err: %s", eventData, err)
+		logging.Infof(ctx, "Publish message to kafka failed: %+v, err: %s", eventData, err)
 		return err
 	}
 	return nil

@@ -10,11 +10,12 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/scheduler-service/main.go",
-            // "program": "${workspaceFolder}/crawler-service/main.go",
+            // "program": "${workspaceFolder}/scheduler-service/main.go",
+            "program": "${workspaceFolder}/crawler-service/main.go",
             // "args": ["scheduler_worker"]
+            "args": ["crawler-worker-retry"]
             // "args": ["crawler-worker"]
-            "args": ["scheduler"]
+            // "args": ["scheduler"]
         }
     ]
 }

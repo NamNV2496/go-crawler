@@ -94,7 +94,7 @@ func LimitCustom(rate, burst int, period time.Duration) redisratev9.Limit {
 
 func (_self *RateLimit) Allow(ctx context.Context, path, key string, limits ...redisratev9.Limit) (pass bool, err error) {
 	ctx = logging.AppendPrefix(ctx, "Allow")
-	logging.Info(ctx, "allow")
+	logging.Infof(ctx, "allow")
 	if len(limits) == 0 {
 		return true, nil
 	}

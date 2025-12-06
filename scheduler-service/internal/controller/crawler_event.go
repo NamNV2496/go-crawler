@@ -49,13 +49,13 @@ func (_self *CrawlerEventController) CreateCrawlerEvent(
 	logging.SetName("scheduler")
 	ctx = logging.ResetPrefix(ctx, "CreateCrawlerEvent")
 
-	logging.Info(ctx, "CreateCrawlerEvent is called before")
+	logging.Infof(ctx, "CreateCrawlerEvent is called before")
 	// // rate limit
 	if err := _self.checkInserRateLimit(ctx, req.Event.Id); err != nil {
 		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %v", err)
 	}
 
-	logging.Info(ctx, "CreateCrawlerEvent is called after")
+	logging.Infof(ctx, "CreateCrawlerEvent is called after")
 	if req == nil || req.Event == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request or url is nil")
 	}
@@ -105,7 +105,7 @@ func (_self *CrawlerEventController) GetCrawlerEvents(
 	logging.SetName("scheduler")
 	ctx = logging.ResetPrefix(ctx, "GetCrawlerEvents")
 
-	logging.Info(ctx, "GetCrawlerEvents is called")
+	logging.Infof(ctx, "GetCrawlerEvents is called")
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "request is nil")
 	}
@@ -202,14 +202,14 @@ func (_self *CrawlerEventController) checkRateLimit(ctx context.Context, key str
 func (_self *CrawlerEventController) checkInserRateLimit(ctx context.Context, key string) error {
 	ctx = logging.AppendPrefix(ctx, "checkInserRateLimit")
 
-	logging.Info(ctx, "rate limit is called")
+	logging.Infof(ctx, "rate limit is called")
 
 	// rate limit 50 request/ second you can use LimitSecond(50 /*rate*/, 1)
 	pass, err := _self.ratelimter.Allow(ctx, "create_event", key, utils.LimitCustom(50 /*rate*/, 1 /*burst*/, time.Second))
 	if err != nil {
 		return err
 	}
-	logging.Info(ctx, "rate limit is called after")
+	logging.Infof(ctx, "rate limit is called after")
 	if !pass {
 		return fmt.Errorf("rate limit exceeded")
 	}
@@ -219,7 +219,7 @@ func (_self *CrawlerEventController) checkInserRateLimit(ctx context.Context, ke
 func (_self *CrawlerEventController) UpdateEventStatus(ctx context.Context, req *crawlerv1.UpdateEventStatusRequest) (*crawlerv1.UpdateEventStatusResponse, error) {
 	ctx = logging.InjectTraceId(ctx)
 	logging.ResetPrefix(ctx, "UpdateEventStatus")
-	logging.Info(ctx, "update status of event: %s", req)
+	logging.Infof(ctx, "update status of event: %s", req)
 	err := _self.crawlerEventService.UpdateEventStatus(ctx, req.Id, domain.StatusEnum(req.Status))
 	if err != nil {
 		return nil, err

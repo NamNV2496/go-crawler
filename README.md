@@ -9,6 +9,7 @@ A simple Job scheduler + web crawler written in Go that crawls websites and extr
 - Manage multiple queue with priority for crawlers
 - Send message to Telegram
 - Validator input data: handle dynamic by config base on different action config in yaml files to control require data or value range in `validator.go`
+- Delay for retrying by asynq
 
 ## Technologies
 
@@ -28,6 +29,7 @@ A simple Job scheduler + web crawler written in Go that crawls websites and extr
 - redis: "github.com/go-redis/redis/v8"
 - telegram bot: "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 - robot txt: github.com/temoto/robotstxt
+- asynq: "github.com/hibiken/asynq" for delay retry if it met error
 ```
 
 ## Logging example

@@ -16,7 +16,7 @@ type ITeleService interface {
 	SendFile(filename string, filetype string, caption string) error
 }
 
-type TeleService struct {
+type teleService struct {
 	enable      bool
 	chatId      int64
 	channelName string
@@ -25,16 +25,16 @@ type TeleService struct {
 
 func NewTeleService(
 	conf *configs.Config,
-) *TeleService {
+) *teleService {
 	if !conf.Telegram.Enable {
-		return &TeleService{}
+		return &teleService{}
 	}
 	bot, err := tgbotapi.NewBotAPI(conf.Telegram.APIKey)
 	if err != nil {
 		panic(err)
 	}
 
-	return &TeleService{
+	return &teleService{
 		enable:      conf.Telegram.Enable,
 		chatId:      conf.Telegram.ChatId,
 		channelName: conf.Telegram.ChannelName,
@@ -42,9 +42,9 @@ func NewTeleService(
 	}
 }
 
-var _ ITeleService = &TeleService{}
+var _ ITeleService = &teleService{}
 
-func (_self *TeleService) SendNotify(telephone string) bool {
+func (_self *teleService) SendNotify(telephone string) bool {
 	msg := tgbotapi.NewMessage(_self.bot.Self.ID, telephone)
 	_, err := _self.bot.Send(msg)
 	if err != nil {
@@ -53,7 +53,7 @@ func (_self *TeleService) SendNotify(telephone string) bool {
 	return true
 }
 
-func (_self *TeleService) SendMessage(message string, format string) error {
+func (_self *teleService) SendMessage(message string, format string) error {
 	if !_self.enable {
 		return nil
 	}
@@ -81,7 +81,7 @@ func (_self *TeleService) SendMessage(message string, format string) error {
 	return nil
 }
 
-func (_self *TeleService) SendLocation(latitude float64, longitude float64) error {
+func (_self *teleService) SendLocation(latitude float64, longitude float64) error {
 	if !_self.enable {
 		return nil
 	}
@@ -98,7 +98,7 @@ func (_self *TeleService) SendLocation(latitude float64, longitude float64) erro
 	return nil
 }
 
-func (_self *TeleService) SendFile(filename string, filetype string, caption string) error {
+func (_self *teleService) SendFile(filename string, filetype string, caption string) error {
 	if !_self.enable {
 		return nil
 	}

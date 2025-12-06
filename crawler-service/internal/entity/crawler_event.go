@@ -12,14 +12,15 @@ import (
 )
 
 type CrawlerEvent struct {
-	Id          int64     `json:"id"`
-	Url         string    `json:"url"`
-	Method      string    `json:"method"`
-	Description string    `json:"description"`
-	Queue       string    `json:"queue"`
-	Quantity    int64     `json:"quantity"`
-	Domain      string    `json:"domain"`
-	IsActive    bool      `json:"is_active"`
+	Id          int64  `json:"id"`
+	Url         string `json:"url"`
+	Method      string `json:"method"`
+	Description string `json:"description"`
+	Queue       string `json:"queue"`
+	Quantity    int64  `json:"quantity"`
+	Domain      string `json:"domain"`
+	IsActive    bool   `json:"is_active"`
+	Retrytime   int64
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
