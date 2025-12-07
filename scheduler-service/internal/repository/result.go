@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/namnv2496/scheduler/internal/domain"
 )
@@ -19,7 +20,7 @@ func NewResultRepository(
 	dbSource IDatabase,
 ) *ResultRepository {
 	return &ResultRepository{
-		baseRepository: newBaseRepository[domain.Result](dbSource.GetDB()),
+		baseRepository: newBaseRepository[domain.Result](dbSource.GetDB(), 5*time.Second),
 	}
 }
 

@@ -56,7 +56,7 @@ func (_self *workerPool) worker(depth int, statscallback StatsCallback, outputCa
 
 	for urlExecute := range _self.queue {
 		_self.activeWorkers.Add(1)
-		// statscallback(wp.pagesCrawled.Load(), wp.activeWorkers.Load(), wp.queueSize.Load())
+		statscallback(_self.pagesCrawled.Load(), _self.activeWorkers.Load(), _self.queueSize.Load())
 		var output any
 		var err error
 		for retryCount := 0; retryCount <= depth; retryCount++ {
@@ -73,18 +73,18 @@ func (_self *workerPool) worker(depth int, statscallback StatsCallback, outputCa
 			outputCallback(output, nil)
 		}
 		// Process URL
-		// links := wp.crawlURL(url, depth)
+		// links := _self.crawlURL(url, depth)
 		// // Add new URLs to queue
 		// for _, link := range links {
-		// 	if _, visited := wp.visited.LoadOrStore(link, true); !visited {
-		// 		wp.queue <- link
-		// 		wp.queueSize.Add(1)
+		// 	if _, visited := _self.visited.LoadOrStore(link, true); !visited {
+		// 		_self.queue <- link
+		// 		_self.queueSize.Add(1)
 		// 	}
 		// }
 
 		_self.pagesCrawled.Add(1)
 		_self.queueSize.Add(-1)
 		_self.activeWorkers.Add(-1)
-		// statscallback(wp.pagesCrawled.Load(), wp.activeWorkers.Load(), wp.queueSize.Load())
+		statscallback(_self.pagesCrawled.Load(), _self.activeWorkers.Load(), _self.queueSize.Load())
 	}
 }

@@ -2,8 +2,11 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type IEntity interface {
@@ -18,6 +21,8 @@ type LimitOption struct {
 
 type QueryOptionFunc func(tx *gorm.DB) *gorm.DB
 
+type FunctionExec func(ctx context.Context, tx *gorm.DB) (isPass bool, err error)
+
 type IRepository[E IEntity] interface {
 	InsertOnce(ctx context.Context, entity *E, opts ...QueryOptionFunc) error
 	Inserts(ctx context.Context, entities []*E, opts ...QueryOptionFunc) error
@@ -28,15 +33,18 @@ type IRepository[E IEntity] interface {
 	Finds(ctx context.Context, opts ...QueryOptionFunc) ([]*E, error)
 	Find(ctx context.Context, opts ...QueryOptionFunc) (*E, error)
 	CountOnce(ctx context.Context, opts ...QueryOptionFunc) (int64, error)
+	RunWithTransaction(ctx context.Context, txName string, funcs ...FunctionExec) error
 }
 
 type baseRepository[E IEntity] struct {
-	db *gorm.DB
+	db      *gorm.DB
+	timeout time.Duration
 }
 
-func newBaseRepository[E IEntity](db *gorm.DB) baseRepository[E] {
+func newBaseRepository[E IEntity](db *gorm.DB, timeout time.Duration) baseRepository[E] {
 	return baseRepository[E]{
-		db: db.Model(new(E)),
+		db:      db.Model(new(E)),
+		timeout: timeout,
 	}
 }
 
@@ -138,6 +146,26 @@ func (_self *baseRepository[E]) CountOnce(ctx context.Context, opts ...QueryOpti
 	return count, nil
 }
 
+func (_self *baseRepository[E]) RunWithTransaction(ctx context.Context, txName string, funcs ...FunctionExec) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, _self.timeout)
+	defer cancel()
+	err := _self.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for _, fn := range funcs {
+			if fn != nil {
+				isPassed, err := fn(timeoutCtx, tx)
+				if err != nil {
+					return err
+				}
+				if !isPassed {
+					break
+				}
+			}
+		}
+		return nil
+	})
+	return err
+}
+
 func WithOrderBy(orderBy string) QueryOptionFunc {
 	return func(tx *gorm.DB) *gorm.DB {
 		return tx.Order(orderBy)
@@ -165,5 +193,28 @@ func WithCondition(condition string, args ...any) QueryOptionFunc {
 func WithOrCondition(condition string, args ...any) QueryOptionFunc {
 	return func(tx *gorm.DB) *gorm.DB {
 		return tx.Or(condition, args...)
+	}
+}
+
+func WithForUpdate() QueryOptionFunc {
+	return func(tx *gorm.DB) *gorm.DB {
+		return tx.Clauses(clause.Locking{
+			Strength: "UPDATE",
+			Options:  "SKIP LOCKED",
+		})
+	}
+}
+
+func WithIsolationLevel(isolationLevel int) QueryOptionFunc {
+	return func(tx *gorm.DB) *gorm.DB {
+		iso := sql.IsolationLevel(isolationLevel)
+
+		return tx.Session(&gorm.Session{
+			Context: context.WithValue(
+				tx.Statement.Context,
+				"tx_options",
+				&sql.TxOptions{Isolation: iso},
+			),
+		})
 	}
 }

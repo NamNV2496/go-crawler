@@ -85,7 +85,7 @@ func (c SchedulerEvent) ToMap() map[string]string {
 			if field.IsNil() {
 				result[paramName] = ""
 			} else {
-				result[paramName] = fmt.Sprintf("%v", field.Elem().Interface())
+				result[paramName] = fmt.Sprint(field.Elem().Interface())
 			}
 		} else {
 			result[paramName] = fmt.Sprintf("%v", field.Interface())

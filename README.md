@@ -10,6 +10,8 @@ A simple Job scheduler + web crawler written in Go that crawls websites and extr
 - Send message to Telegram
 - Validator input data: handle dynamic by config base on different action config in yaml files to control require data or value range in `validator.go`
 - Delay for retrying by asynq
+- Lock record + set isolation level to restrict duplication when multiple workers get events.
+- Transaction management
 
 ## Technologies
 
