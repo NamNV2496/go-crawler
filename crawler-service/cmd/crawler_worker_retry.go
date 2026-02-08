@@ -8,6 +8,7 @@ import (
 	"github.com/namnv2496/crawler/internal/repository"
 	"github.com/namnv2496/crawler/internal/service"
 	"github.com/namnv2496/crawler/internal/service/mq"
+	"github.com/namnv2496/crawler/internal/service/server"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
 )
@@ -32,7 +33,7 @@ func InvokeCrawlerWorkerRetry(invokers ...any) *fx.App {
 			fx.Annotate(service.NewTeleService, fx.As(new(service.ITeleService))),
 			fx.Annotate(repository.NewDatabase, fx.As(new(repository.IDatabase))),
 			fx.Annotate(repository.NewResultRepository, fx.As(new(repository.IResultRepository))),
-			fx.Annotate(service.NewWorkerPool, fx.As(new(service.IWorkerPool))),
+			fx.Annotate(server.NewWorkerPool, fx.As(new(server.IWorkerPool))),
 			fx.Annotate(mq.NewAsynqProducer, fx.As(new(mq.IAsynqProducer))),
 
 			fx.Annotate(mq.NewAsynqConsumer, fx.As(new(mq.IAsynqConsumer))),
@@ -47,7 +48,23 @@ func InvokeCrawlerWorkerRetry(invokers ...any) *fx.App {
 }
 
 func startCrawlerWorkerRetry(
+	lc fx.Lifecycle,
 	retryWorker service.IRetryWorker,
+	workerPool server.IWorkerPool,
 ) {
+	// Start worker pool once at startup
+	ctx := context.Background()
+	if err := workerPool.Start(ctx); err != nil {
+		panic("failed to start worker pool: " + err.Error())
+	}
+
+	// Register graceful shutdown
+	lc.Append(fx.Hook{
+		OnStop: func(ctx context.Context) error {
+			workerPool.Stop()
+			return nil
+		},
+	})
+
 	retryWorker.Start(context.Background())
 }

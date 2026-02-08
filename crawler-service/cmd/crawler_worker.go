@@ -12,6 +12,7 @@ import (
 	"github.com/namnv2496/crawler/internal/repository/schedulerservice"
 	"github.com/namnv2496/crawler/internal/service"
 	"github.com/namnv2496/crawler/internal/service/mq"
+	"github.com/namnv2496/crawler/internal/service/server"
 	"github.com/segmentio/kafka-go"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
@@ -40,7 +41,7 @@ func InvokeCrawlerWorker(invokers ...any) *fx.App {
 			fx.Annotate(service.NewTeleService, fx.As(new(service.ITeleService))),
 			fx.Annotate(repository.NewDatabase, fx.As(new(repository.IDatabase))),
 			fx.Annotate(repository.NewResultRepository, fx.As(new(repository.IResultRepository))),
-			fx.Annotate(service.NewWorkerPool, fx.As(new(service.IWorkerPool))),
+			fx.Annotate(server.NewWorkerPool, fx.As(new(server.IWorkerPool))),
 
 			fx.Annotate(mq.NewAsynqProducer, fx.As(new(mq.IAsynqProducer))),
 			fx.Annotate(schedulerservice.NewSchedulerService, fx.As(new(schedulerservice.ISchedulerService))),
@@ -58,7 +59,23 @@ func startCrawlerWorker(
 	config *configs.Config,
 	consumer mq.IConsumer,
 	crawlerService service.ICrawlerService,
+	workerPool server.IWorkerPool,
 ) {
+	// Start worker pool once at startup
+	ctx := context.Background()
+	if err := workerPool.Start(ctx); err != nil {
+		logging.Error(ctx, "Failed to start worker pool: %v", err)
+		return
+	}
+
+	// Register graceful shutdown
+	lc.Append(fx.Hook{
+		OnStop: func(ctx context.Context) error {
+			workerPool.Stop()
+			return nil
+		},
+	})
+
 	startConsumer(consumer, crawlerService)
 	select {}
 }

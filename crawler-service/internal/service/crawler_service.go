@@ -17,6 +17,7 @@ import (
 	"github.com/namnv2496/crawler/internal/repository"
 	"github.com/namnv2496/crawler/internal/repository/schedulerservice"
 	"github.com/namnv2496/crawler/internal/service/mq"
+	"github.com/namnv2496/crawler/internal/service/server"
 	"github.com/temoto/robotstxt"
 	"golang.org/x/net/html"
 )
@@ -31,34 +32,39 @@ type ICrawlerService interface {
 }
 
 type crawlerService struct {
-	maxDepth               int
-	visited                map[string]bool
-	mutex                  sync.Mutex
-	results                map[string]string
-	teleService            ITeleService
-	resultRepo             repository.IResultRepository
-	workerPool             IWorkerPool
-	retryProducer          mq.IAsynqProducer
-	schedulerServiceClient schedulerservice.ISchedulerService
+	isDistributedWorkerPool bool
+	maxDepth                int64
+	visited                 map[string]bool
+	mutex                   sync.Mutex
+	results                 map[string]string
+	teleService             ITeleService
+	resultRepo              repository.IResultRepository
+	workerPool              server.IWorkerPool
+	distributedWorkerPool   server.IDistributedWorkerPool
+	retryProducer           mq.IAsynqProducer
+	schedulerServiceClient  schedulerservice.ISchedulerService
 }
 
 // NewCrawler creates a new crawler instance
 func NewCrawlerService(
 	teleService ITeleService,
 	resultRepo repository.IResultRepository,
-	workerPool IWorkerPool,
+	workerPool server.IWorkerPool,
+	distributedWorkerPool server.IDistributedWorkerPool,
 	retryProducer mq.IAsynqProducer,
 	schedulerServiceClient schedulerservice.ISchedulerService,
 ) *crawlerService {
 	return &crawlerService{
-		maxDepth:               3,
-		visited:                make(map[string]bool),
-		results:                make(map[string]string),
-		teleService:            teleService,
-		resultRepo:             resultRepo,
-		workerPool:             workerPool,
-		retryProducer:          retryProducer,
-		schedulerServiceClient: schedulerServiceClient,
+		isDistributedWorkerPool: false,
+		maxDepth:                3,
+		visited:                 make(map[string]bool),
+		results:                 make(map[string]string),
+		teleService:             teleService,
+		resultRepo:              resultRepo,
+		workerPool:              workerPool,
+		distributedWorkerPool:   distributedWorkerPool,
+		retryProducer:           retryProducer,
+		schedulerServiceClient:  schedulerServiceClient,
 	}
 }
 
@@ -69,34 +75,51 @@ func (_self *crawlerService) Crawl(ctx context.Context, event entity.CrawlerEven
 	if !event.IsActive {
 		return nil
 	}
-	status := string(entity.StatusSuccessed)
-	err := _self.crawlPage(ctx, event, _self.maxDepth)
-	if err != nil {
-		// delay 5m if fail
-		if event.Retrytime < 3 {
-			event.Retrytime += 1
-			_self.retryProducer.EnqueueRetryEvent(ctx, event, time.Now().Add(5*time.Minute))
-		}
-		status = string(entity.StatusFailed)
+	if _self.isDistributedWorkerPool {
+		_self.distributedWorkerPool.ExecuteOnServerAsync(ctx, &server.ExecutionRequest{}, make(chan *server.ExecutionResponse))
+	} else {
+		_self.workerPool.Execute(
+			func() (any, error) {
+				return nil, _self.crawlPage(ctx, event, _self.maxDepth)
+			},
+			_self.maxDepth,
+			nil, // stats call back
+			func(result any, err error) {
+				status := string(entity.StatusSuccessed)
+				if err != nil {
+					// delay 5m if fail
+					if event.Retrytime < 3 {
+						event.Retrytime += 1
+						_self.retryProducer.EnqueueRetryEvent(ctx, event, time.Now().Add(5*time.Minute))
+					}
+					status = string(entity.StatusFailed)
+					logging.Error(ctx, "crawl failed: %v", err)
+				}
+				if err := _self.schedulerServiceClient.UpdateSchedulerEvent(ctx, &entity.UpdateSchedulerEventRequest{
+					Id: fmt.Sprint(event.Id),
+					Event: &entity.SchedulerEvent{
+						Id:          fmt.Sprint(event.Id),
+						Status:      status,
+						Queue:       event.Queue,
+						Domain:      event.Domain,
+						Url:         event.Url,
+						Method:      event.Method,
+						SchedulerAt: event.Retrytime,
+						NextRunTime: event.Retrytime,
+						IsActive:    event.IsActive,
+					},
+				}); err != nil {
+					logging.Error(ctx, "failed to update scheduler event %d: %v", event.Id, err)
+				} else {
+					logging.Debug(ctx, "successfully updated scheduler event %d with status %s", event.Id, status)
+				}
+			},
+		)
 	}
-
-	// update status if it executed successfully
-	_self.schedulerServiceClient.UpdateSchedulerEvent(ctx, &entity.UpdateSchedulerEventRequest{
-		Id: fmt.Sprint(event.Id),
-		Event: &entity.SchedulerEvent{
-			Id:          fmt.Sprint(event.Id),
-			Url:         event.Url,
-			Method:      event.Method,
-			Description: event.Description,
-			Queue:       event.Queue,
-			Domain:      event.Domain,
-			Status:      status,
-		},
-	})
 	return nil
 }
 
-func (_self *crawlerService) crawlPage(ctx context.Context, url entity.CrawlerEvent, depth int) error {
+func (_self *crawlerService) crawlPage(ctx context.Context, url entity.CrawlerEvent, depth int64) error {
 	deferFunc := logging.AppendPrefix("crawlPage")
 	defer deferFunc()
 	if depth > _self.maxDepth {
@@ -138,7 +161,7 @@ func (_self *crawlerService) crawlPage(ctx context.Context, url entity.CrawlerEv
 	return nil
 }
 
-func (_self *crawlerService) crawlRobotFile(_ context.Context, url entity.CrawlerEvent, depth int) (string, error) {
+func (_self *crawlerService) crawlRobotFile(_ context.Context, url entity.CrawlerEvent, depth int64) (string, error) {
 	if !isValidURL(url.Url) {
 		return "", nil
 	}
@@ -163,7 +186,7 @@ func (_self *crawlerService) crawlRobotFile(_ context.Context, url entity.Crawle
 	return "", nil
 }
 
-func (_self *crawlerService) crawlGET(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
+func (_self *crawlerService) crawlGET(ctx context.Context, url entity.CrawlerEvent, depth int64) (string, error) {
 	if !isValidURL(url.Url) {
 		return "", nil
 	}
@@ -186,7 +209,7 @@ func (_self *crawlerService) crawlGET(ctx context.Context, url entity.CrawlerEve
 	return doc.Data, nil
 }
 
-func (_self *crawlerService) crawlPOST(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
+func (_self *crawlerService) crawlPOST(ctx context.Context, url entity.CrawlerEvent, depth int64) (string, error) {
 	if !isValidURL(url.Url) {
 		return "", nil
 	}
@@ -209,7 +232,7 @@ func (_self *crawlerService) crawlPOST(ctx context.Context, url entity.CrawlerEv
 	return doc.Data, nil
 }
 
-func (_self *crawlerService) crawlCurl(ctx context.Context, url entity.CrawlerEvent, depth int) (string, error) {
+func (_self *crawlerService) crawlCurl(ctx context.Context, url entity.CrawlerEvent, depth int64) (string, error) {
 	deferFunc := logging.AppendPrefix("crawlPage")
 	defer deferFunc()
 	// Parse the curl command string
@@ -237,39 +260,28 @@ func (_self *crawlerService) crawlCurl(ctx context.Context, url entity.CrawlerEv
 
 	// Create and execute command
 	cmd := exec.Command("curl", args...)
-	var output []byte
-	var err error
-	_self.workerPool.Execute(
-		func() (any, error) {
-			var cmdOutput []byte
-			cmdOutput, err = cmd.Output()
-			output = cmdOutput // Assign to outer variable
-			return cmdOutput, err
-		},
-		depth,
-		nil,
-		func(result any, cmdErr error) {
-			if cmdErr != nil {
-				err = cmdErr // Propagate error to outer scope
-				return
-			}
-			if err = _self.teleService.SendMessage(entity.ExtractGoldPrice(output), "text"); err != nil {
-				logging.Error(ctx, "send price error: %s", err.Error())
-			}
-			// write result to db
-			if err = _self.resultRepo.CreateResult(ctx, &domain.Result{
-				Url:    url.Url,
-				Method: url.Method,
-				Queue:  url.Queue,
-				Domain: url.Domain,
-				Result: string(output),
-			}); err != nil {
-				logging.Error(ctx, "create result error: %s", err.Error())
-			}
-			logging.Debug(ctx, "send message to Telegram: %v\n", string(output))
-			logging.Debug(ctx, "=======================================")
-			_self.results["test"] = string(output)
-		})
+	output, err := cmd.Output()
+	// Output callback: process results and save to DB
+	if err != nil {
+		logging.Error(ctx, "curl execution error: %v", err)
+		return "", err
+	}
+	if err = _self.teleService.SendMessage(entity.ExtractGoldPrice(output), "text"); err != nil {
+		logging.Error(ctx, "send price error: %s", err.Error())
+	}
+	// write result to db
+	if err = _self.resultRepo.CreateResult(ctx, &domain.Result{
+		Url:    url.Url,
+		Method: url.Method,
+		Queue:  url.Queue,
+		Domain: url.Domain,
+		Result: string(output),
+	}); err != nil {
+		logging.Error(ctx, "create result error: %s", err.Error())
+	}
+	logging.Debug(ctx, "send message to Telegram: %v\n", string(output))
+	logging.Debug(ctx, "=======================================")
+	_self.results["test"] = string(output)
 	if err != nil {
 		return "", fmt.Errorf("error executing curl command: %v", err)
 	}
