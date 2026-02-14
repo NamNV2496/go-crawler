@@ -10,6 +10,7 @@ import (
 	"github.com/namnv2496/crawler/internal/configs"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=../../mocks/usecase/$GOFILE.mock.go -package=$GOPACKAGE
 type ITeleService interface {
 	SendMessage(message string, format string) error
 	SendLocation(latitude float64, longitude float64) error

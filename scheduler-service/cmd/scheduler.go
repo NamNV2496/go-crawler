@@ -47,6 +47,7 @@ func InvokeServer(invokers ...any) *fx.App {
 
 			fx.Annotate(startRateLimit, fx.As(new(utils.IRateLimit))),
 			fx.Annotate(internalvalidator.NewValidate, fx.As(new(internalvalidator.IValidate))),
+			// fx.Annotate(repository.NewBatchStatusUpdater, fx.As(new(repository.IBatchStatusUpdater))),
 		),
 		fx.Supply(
 			config,

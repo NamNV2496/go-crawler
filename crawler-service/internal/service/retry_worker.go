@@ -9,6 +9,7 @@ import (
 	"github.com/namnv2496/crawler/internal/service/mq"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=../../mocks/usecase/$GOFILE.mock.go -package=$GOPACKAGE
 type IRetryWorker interface {
 	Start(ctx context.Context)
 }

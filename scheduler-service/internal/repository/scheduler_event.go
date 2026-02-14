@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=../../mocks/repository/$GOFILE.mock.go -package=$GOPACKAGE
 type ISchedulerEventRepository interface {
 	IRepository[domain.SchedulerEvent]
 	CreateSchedulerEvent(ctx context.Context, event *domain.SchedulerEvent) (int64, error)

@@ -1,0 +1,21 @@
+{
+  "GET": {
+    "url": {
+      "require": "1"
+    },
+    "method": {
+      "require": "1"
+    }
+  },
+  "POST": {
+    "url": {
+      "require": "1"
+    },
+    "method": {
+      "require": "1"
+    },
+    "cron_exp": {
+      "method": "GET"
+    }
+  }
+}

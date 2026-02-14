@@ -1,0 +1,17 @@
+{
+  "repeat_times": {
+    "Label": "Repeat Times",
+    "MinValue": 1,
+    "MaxValue": 1000
+  },
+  "url": {
+    "Label": "URL",
+    "MinLength": 10,
+    "MaxLength": 2048
+  },
+  "description": {
+    "Label": "Description",
+    "MinWord": 3,
+    "MaxWord": 100
+  }
+}

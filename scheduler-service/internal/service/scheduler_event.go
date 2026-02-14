@@ -11,6 +11,7 @@ import (
 	"github.com/namnv2496/scheduler/pkg/utils"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=../../mocks/usecase/$GOFILE.mock.go -package=$GOPACKAGE
 type ISchedulerEventService interface {
 	CreateSchedulerEvent(ctx context.Context, SchedulerEvent *entity.SchedulerEvent) (int64, error)
 	GetSchedulerEvents(ctx context.Context, limit, offset int32) ([]*entity.SchedulerEvent, error)

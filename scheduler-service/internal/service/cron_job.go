@@ -24,6 +24,7 @@ const (
 	MaxWorker = 10
 )
 
+//go:generate mockgen -source=$GOFILE -destination=../../mocks/usecase/$GOFILE.mock.go -package=$GOPACKAGE
 type ICrawlerCronJob interface {
 	Start() error
 }
@@ -34,6 +35,7 @@ type CrawlerCronJob struct {
 	SchedulerEventRepo repository.ISchedulerEventRepository
 	distributedLock    distributedlock.IDistributedLock
 	producers          mq.IProducer
+	batchWritingRepo   repository.IBatchStatusUpdater
 }
 
 func NewUrlCronJob(
@@ -41,6 +43,7 @@ func NewUrlCronJob(
 	SchedulerEventRepo repository.ISchedulerEventRepository,
 	distributedLock distributedlock.IDistributedLock,
 	producers mq.IProducer,
+	batchWritingRepo repository.IBatchStatusUpdater,
 ) ICrawlerCronJob {
 	return &CrawlerCronJob{
 		conf:               conf,
@@ -48,6 +51,7 @@ func NewUrlCronJob(
 		SchedulerEventRepo: SchedulerEventRepo,
 		distributedLock:    distributedLock,
 		producers:          producers,
+		batchWritingRepo:   batchWritingRepo,
 	}
 }
 
@@ -130,13 +134,28 @@ func (_self *CrawlerCronJob) ExecuteEvent(ctx context.Context) func() {
 
 		updateEvents := make([]*domain.SchedulerEvent, 0)
 		for event := range updateEventsChan {
+			if _self.batchWritingRepo != nil {
+				err := _self.batchWritingRepo.UpdateStatus(ctx, int64(event.Id), event.Status)
+				if err != nil {
+					logging.Infof(ctx, "Batch publish message to kafka failed: %+v, err: %s", event, err)
+					continue
+				}
+			}
 			updateEvents = append(updateEvents, event)
 		}
 
 		logging.Infof(ctx, "update events: %d", len(updateEvents))
-		if err := _self.SchedulerEventRepo.Updates(ctx, updateEvents); err != nil {
-			logging.Errorf(ctx, "error update events: %s", err)
+
+		// force flush to make sure all event is updated
+		if _self.batchWritingRepo != nil {
+			if err := _self.batchWritingRepo.Flush(ctx); err != nil {
+				logging.Errorf(ctx, "error flushing batch producer: %s", err)
+			}
 		}
+
+		// if err := _self.SchedulerEventRepo.Updates(ctx, updateEvents); err != nil {
+		// 	logging.Errorf(ctx, "error update events: %s", err)
+		// }
 	}
 }
 

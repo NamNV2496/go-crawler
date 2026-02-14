@@ -27,6 +27,7 @@ const (
 	METHOD_CURL   string = "CURL"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=../../mocks/usecase/$GOFILE.mock.go -package=$GOPACKAGE
 type ICrawlerService interface {
 	Crawl(ctx context.Context, url entity.CrawlerEvent) error
 }
