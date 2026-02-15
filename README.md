@@ -33,6 +33,7 @@ A simple Job scheduler + web crawler written in Go that crawls websites and extr
 - robot txt: github.com/temoto/robotstxt
 - asynq: "github.com/hibiken/asynq" for delay retry if it met error
 - circuir breaker: "github.com/sony/gobreaker/v2"
+- BFS: for crawler page with max depth
 ```
 
 ## Logging example
