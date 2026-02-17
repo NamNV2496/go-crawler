@@ -38,6 +38,9 @@ A simple Job scheduler + web crawler written in Go that crawls websites and extr
 
 ## Trade-off
 
+<summary>
+<details>
+
 ### 1. Kafka vs Direct Worker Invocation
 
 Decision: Use Kafka as message broker between scheduler and crawler workers.
@@ -160,9 +163,6 @@ Why not chosen:
 Conclusion:
 BFS chosen for balanced crawling.
 
-
-<summary>
-<details>
 ## Logging example
 
 ```bash
@@ -199,8 +199,13 @@ flowchart LR
     worker -- "notify through tele if<br>match with rules" --> telegram[Telegram]
     worker[worker<br>ratelimiter] -- update statue --> urlservice
 ```
+<summary>
+<details>
 
 ![alt text](docs/design1.png)
+
+</summary>
+</details>
 
 # Architecture level 2 (branch: v2) [FINAL]
 
@@ -285,6 +290,9 @@ publish to crawler queue: normal, request: curl --location 'https://m.cafef.vn/d
 </details>
 
 # 4. Validator example
+
+<summary>
+<details>
 
 ## 4.1 Missing require field
 
@@ -545,7 +553,5 @@ publish to crawler queue: normal, request: curl --location 'https://m.cafef.vn/d
 # output: Thời gian trigger không đúng format
 ```
 
-
-
-
-
+</summary>
+</details>
