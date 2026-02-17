@@ -36,6 +36,133 @@ A simple Job scheduler + web crawler written in Go that crawls websites and extr
 - BFS: for crawler page with max depth
 ```
 
+## Trade-off
+
+### 1. Kafka vs Direct Worker Invocation
+
+Decision: Use Kafka as message broker between scheduler and crawler workers.
+
+Architecture:
+Scheduler → Kafka → Worker
+
+Benefits:
+- decouples scheduler and workers
+- improves system scalability
+- enables horizontal scaling of workers
+- provides fault tolerance via message persistence
+- allows retry and delayed processing
+
+Trade-offs:
+- increased infrastructure complexity
+- additional operational overhead (Kafka cluster)
+- slightly higher latency compared to direct calls
+
+Conclusion:
+Kafka chosen to enable scalable, fault-tolerant distributed processing.
+
+
+### 2. Redis Distributed Lock vs Database Lock
+
+Decision: Use Redis (redsync) for distributed locking.
+
+Benefits:
+- fast lock acquisition (sub-millisecond)
+- lightweight
+- scalable
+- avoids database contention
+
+Trade-offs:
+- requires Redis availability
+- slightly weaker consistency than database locks
+
+Alternative considered:
+PostgreSQL row-level locks.
+
+Why not chosen:
+- slower
+- reduces database performance
+- increases database load
+
+Conclusion:
+Redis distributed locking chosen for performance and scalability.
+
+### 3. Async Worker Processing vs Synchronous Crawling
+
+Decision: Use async worker queue with Kafka and Asynq.
+
+Benefits:
+- improves throughput
+- prevents scheduler blocking
+- supports retry mechanism
+- enables horizontal scaling
+
+Trade-offs:
+- increased system complexity
+- harder debugging
+
+Why not chosen:
+- blocks scheduler
+- poor scalability
+- single point of bottleneck
+
+Conclusion:
+Async worker architecture chosen for scalability and performance.
+
+### 4. Redis Queue (Asynq) vs Kafka Retry Topics
+
+Decision: Use Asynq for retry handling.
+
+Benefits:
+- built-in retry mechanism
+- supports delayed retries
+- easy to configure
+
+Trade-offs:
+- additional infrastructure component
+- retry logic split between Kafka and Redis
+- Asynq simplifies retry management.
+
+### 5. PostgreSQL vs NoSQL Database
+
+Decision: Use PostgreSQL for persistent storage.
+
+Benefits:
+- strong consistency
+- reliable
+- supports complex queries
+- transactional guarantees
+
+Trade-offs:
+- less flexible schema
+- harder horizontal scaling compared to NoSQL
+
+Conclusion:
+PostgreSQL chosen for reliability and simplicity.
+
+### 6. BFS Crawling Strategy vs DFS
+
+Decision: Use BFS crawling strategy.
+Benefits:
+- better coverage distribution
+- avoids deep crawling bias
+- fair domain traversal
+
+Trade-offs:
+- requires more memory
+- higher queue management overhead
+
+Alternative considered:
+DFS crawling.
+Why not chosen:
+- risk of deep crawl loops
+- uneven coverage
+
+Conclusion:
+BFS chosen for balanced crawling.
+
+
+<summary>
+<details>
 ## Logging example
 
 ```bash
@@ -51,9 +178,10 @@ A simple Job scheduler + web crawler written in Go that crawls websites and extr
 {"level":"INFO","ts":"2025-12-04T19:38:34.536+0700","caller":"logging/logging.go:87","msg":"[CreateCrawlerEvent] [checkInserRateLimit] [Allow] allow","trace_id":"9c8c1d83-b854-48cd-a487-fc233abf0505"}
 {"level":"INFO","ts":"2025-12-04T19:38:34.540+0700","caller":"logging/logging.go:87","msg":"[CreateCrawlerEvent] [checkInserRateLimit] rate limit is called after","trace_id":"9c8c1d83-b854-48cd-a487-fc233abf0505"}
 {"level":"INFO","ts":"2025-12-04T19:38:34.540+0700","caller":"logging/logging.go:87","msg":"[CreateCrawlerEvent] CreateCrawlerEvent is called after","trace_id":"9c8c1d83-b854-48cd-a487-fc233abf0505"}
-
-
 ```
+</details>
+</summary>
+
 # Architecture level 1 (branch: v1) [BASIC]
 
 Is basic crawler 
