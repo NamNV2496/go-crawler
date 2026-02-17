@@ -44,8 +44,7 @@ func NewDatabase(
 	// Set connection pool settings
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
-	db.AutoMigrate(&domain.SchedulerEvent{})
-	return &Database{db: db}, nil
+	return &Database{db: db}, db.AutoMigrate(&domain.SchedulerEvent{})
 }
 
 func (d *Database) GetDB() *gorm.DB {

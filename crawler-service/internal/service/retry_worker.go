@@ -11,7 +11,7 @@ import (
 
 //go:generate mockgen -source=$GOFILE -destination=../../mocks/usecase/$GOFILE.mock.go -package=$GOPACKAGE
 type IRetryWorker interface {
-	Start(ctx context.Context)
+	Start(ctx context.Context) error
 }
 
 type retryWorker struct {
@@ -29,11 +29,11 @@ func NewRetryWorker(
 	}
 }
 
-func (_self *retryWorker) Start(ctx context.Context) {
+func (_self *retryWorker) Start(ctx context.Context) error {
 	_self.asynqConsumer.RegisterHandler(mq.RetryEvent, _self.RetryEventHandler)
 
 	// start server
-	_self.asynqConsumer.Run()
+	return _self.asynqConsumer.Run()
 }
 
 func (_self *retryWorker) RetryEventHandler(ctx context.Context, task *asynq.Task) error {

@@ -96,7 +96,11 @@ func startConsumer(
 					var err error
 					var m kafka.Message
 					m, err = consumer.ReadMessage(ctx)
-					defer consumer.CommitMessages(ctx, m)
+					defer func() {
+						if err := consumer.CommitMessages(ctx, m); err != nil {
+							logging.Error(ctx, "Failed to commit message: %v", err)
+						}
+					}()
 					if err != nil {
 						return
 					}
@@ -118,21 +122,21 @@ func startConsumer(
 	}
 }
 
-func startTest(
-	crawlerService service.ICrawlerService,
-) {
-	ctx := logging.InjectTraceId(context.Background())
-	logging.ResetPrefix(ctx, "startTest")
-	url := entity.CrawlerEvent{
-		Id:       1,
-		Url:      "https://cellphones.com.vn/robots.txt",
-		Method:   "ROBOTS",
-		Queue:    "priority",
-		Domain:   "phone_cellphones",
-		IsActive: true,
-	}
-	if err := crawlerService.Crawl(ctx, url); err != nil {
-		logging.Error(ctx, err.Error())
-		return
-	}
-}
+// func startTest(
+// 	crawlerService service.ICrawlerService,
+// ) {
+// 	ctx := logging.InjectTraceId(context.Background())
+// 	logging.ResetPrefix(ctx, "startTest")
+// 	url := entity.CrawlerEvent{
+// 		Id:       1,
+// 		Url:      "https://cellphones.com.vn/robots.txt",
+// 		Method:   "ROBOTS",
+// 		Queue:    "priority",
+// 		Domain:   "phone_cellphones",
+// 		IsActive: true,
+// 	}
+// 	if err := crawlerService.Crawl(ctx, url); err != nil {
+// 		logging.Error(ctx, err.Error())
+// 		return
+// 	}
+// }

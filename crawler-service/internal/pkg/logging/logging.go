@@ -8,6 +8,14 @@ import (
 	"github.com/google/uuid"
 )
 
+type traceIDKeyType struct{}
+
+var traceIDKey = traceIDKeyType{}
+
+const (
+	TraceId = "trace_id"
+)
+
 type Logger struct {
 	*log.Logger
 }
@@ -35,22 +43,22 @@ func (l *Logger) AppendPrefix(funcName string) {
 }
 
 func (l *Logger) Info(ctx context.Context, msg string) {
-	traceID := ctx.Value("trace_id")
+	traceID := ctx.Value(TraceId)
 	l.Printf("[INFO] trace_id=%v - %s\n", traceID, msg)
 }
 
 func (l *Logger) Error(ctx context.Context, msg string) {
-	traceID := ctx.Value("trace_id")
+	traceID := ctx.Value(TraceId)
 	l.Printf("[ERROR] trace_id=%v - %s\n", traceID, msg)
 }
 
 func (l *Logger) Debug(ctx context.Context, msg string) {
-	traceID := ctx.Value("trace_id")
+	traceID := ctx.Value(TraceId)
 	l.Printf("[DEBUG] trace_id=%v - %s\n", traceID, msg)
 }
 
 func (l *Logger) Warn(ctx context.Context, msg string) {
-	traceID := ctx.Value("trace_id")
+	traceID := ctx.Value(TraceId)
 	l.Printf("[WARN] trace_id=%v - %s\n", traceID, msg)
 }
 
@@ -87,5 +95,5 @@ func ResetPrefix(ctx context.Context, funcName string) {
 }
 
 func InjectTraceId(ctx context.Context) context.Context {
-	return context.WithValue(ctx, "trace_id", uuid.New())
+	return context.WithValue(ctx, traceIDKey, uuid.New())
 }

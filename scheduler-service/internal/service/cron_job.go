@@ -100,7 +100,11 @@ func (_self *CrawlerCronJob) ExecuteEvent(ctx context.Context) func() {
 					logging.Errorf(ctx, "Failed to acquire lock for URL %s: %v", e.Url, err)
 					return
 				}
-				defer mutex.Unlock()
+				defer func() {
+					if _, err := mutex.Unlock(); err != nil {
+						logging.Errorf(ctx, "Failed to release lock for URL %s: %v", e.Url, err)
+					}
+				}()
 
 				if err := _self.publishToCrawler(ctx, entity.SchedulerEvent(*e)); err != nil {
 					return

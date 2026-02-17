@@ -9,6 +9,10 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+type contextKey struct{}
+
+var TX = contextKey{}
+
 type IEntity interface {
 	TableName() string
 }
@@ -212,7 +216,7 @@ func WithIsolationLevel(isolationLevel int) QueryOptionFunc {
 		return tx.Session(&gorm.Session{
 			Context: context.WithValue(
 				tx.Statement.Context,
-				"tx_options",
+				TX,
 				&sql.TxOptions{Isolation: iso},
 			),
 		})

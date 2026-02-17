@@ -190,8 +190,7 @@ func (_self *RateLimit) block(ctx context.Context, path, key string) error {
 		return err
 	}
 	// reset retention
-	_self.ResetRetention(ctx, blockedKey)
-	return nil
+	return _self.ResetRetention(ctx, blockedKey)
 }
 
 func (_self *RateLimit) ResetRetention(ctx context.Context, blockedKey string) error {

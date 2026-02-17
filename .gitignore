@@ -2,4 +2,6 @@
 */vendor/*
 */.env
 */.venv/*
-*/vendor
+*/coverage*
+
+

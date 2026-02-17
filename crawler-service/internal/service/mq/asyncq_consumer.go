@@ -11,7 +11,7 @@ type AsynqHandlerFunc func(ctx context.Context, task *asynq.Task) error
 
 type IAsynqConsumer interface {
 	RegisterHandler(taskName string, handlerFunc AsynqHandlerFunc)
-	Run()
+	Run() error
 }
 
 type asynqConsumer struct {
@@ -37,8 +37,8 @@ func NewAsynqConsumer(
 
 var _ IAsynqConsumer = &asynqConsumer{}
 
-func (_self *asynqConsumer) Run() {
-	_self.server.Run(_self.handler)
+func (_self *asynqConsumer) Run() error {
+	return _self.server.Run(_self.handler)
 }
 
 func (_self *asynqConsumer) RegisterHandler(taskName string, handlerFunc AsynqHandlerFunc) {

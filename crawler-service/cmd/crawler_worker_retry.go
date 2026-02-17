@@ -51,7 +51,7 @@ func startCrawlerWorkerRetry(
 	lc fx.Lifecycle,
 	retryWorker service.IRetryWorker,
 	workerPool server.IWorkerPool,
-) {
+) error {
 	// Start worker pool once at startup
 	ctx := context.Background()
 	if err := workerPool.Start(ctx); err != nil {
@@ -66,5 +66,5 @@ func startCrawlerWorkerRetry(
 		},
 	})
 
-	retryWorker.Start(context.Background())
+	return retryWorker.Start(context.Background())
 }

@@ -34,8 +34,8 @@ type DatabaseConfig struct {
 }
 
 type SchedulerService struct {
-	Host    string        `env:"db_host" envDefault:"localhost:8080`
-	Timeout time.Duration `env:"timeout" envDefault:"5s"`
+	SchedulerHost string        `env:"Scheduler_Host" envDefault:"localhost:8080"`
+	Timeout       time.Duration `env:"timeout" envDefault:"5s"`
 }
 
 type Redis struct {

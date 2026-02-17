@@ -1,0 +1,125 @@
+version: "3.8"
+
+services:
+  # Scheduler Service
+  scheduler:
+    build:
+      context: ./scheduler-service
+      dockerfile: Dockerfile
+    image: go-crawler/scheduler:latest
+    container_name: scheduler
+    ports:
+      - "8080:8080"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=crawler
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KAFKA_BROKERS=kafka:29092
+      - LOG_LEVEL=info
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+    networks:
+      - crawler
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Scheduler Worker
+  scheduler-worker:
+    build:
+      context: ./scheduler-service
+      dockerfile: Dockerfile
+    image: go-crawler/scheduler:latest
+    container_name: scheduler-worker
+    command: ["scheduler_worker"]
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=crawler
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KAFKA_BROKERS=kafka:29092
+      - LOG_LEVEL=info
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+      - scheduler
+    networks:
+      - crawler
+    restart: unless-stopped
+
+  # Crawler Worker
+  crawler-worker:
+    build:
+      context: ./crawler-service
+      dockerfile: Dockerfile
+    image: go-crawler/crawler:latest
+    container_name: crawler-worker
+    command: ["crawler-worker"]
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=crawler
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KAFKA_BROKERS=kafka:29092
+      - LOG_LEVEL=info
+      - MAX_DEPTH=3
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+      - scheduler
+    networks:
+      - crawler
+    restart: unless-stopped
+    deploy:
+      replicas: 2  # Run 2 crawler workers for parallel processing
+
+  # Crawler Retry Worker
+  crawler-worker-retry:
+    build:
+      context: ./crawler-service
+      dockerfile: Dockerfile
+    image: go-crawler/crawler:latest
+    container_name: crawler-worker-retry
+    command: ["crawler-worker-retry"]
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=crawler
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KAFKA_BROKERS=kafka:29092
+      - LOG_LEVEL=info
+      - MAX_DEPTH=3
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+      - scheduler
+    networks:
+      - crawler
+    restart: unless-stopped
+
+networks:
+  crawler:
+    external: true
+    name: go-crawler_crawler

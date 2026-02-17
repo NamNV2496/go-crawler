@@ -36,7 +36,7 @@ func NewSchedulerService(conf *configs.Config) ISchedulerService {
 		},
 	})
 	return &schedulerService{
-		host: conf.SchedulerService.Host,
+		host: conf.SchedulerService.SchedulerHost,
 		client: &http.Client{
 			Timeout: conf.SchedulerService.Timeout,
 		},

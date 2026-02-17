@@ -61,10 +61,10 @@ func TestCronJob_FetchAndPublishEvents(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		mockEvents     []*domain.SchedulerEvent
+		name            string
+		mockEvents      []*domain.SchedulerEvent
 		expectedPublish int
-		wantErr        bool
+		wantErr         bool
 	}{
 		{
 			name: "success - publish pending events",

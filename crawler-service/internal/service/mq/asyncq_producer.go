@@ -15,7 +15,7 @@ const (
 )
 
 type IAsynqProducer interface {
-	EnqueueRetryEvent(ctx context.Context, event any, processAt time.Time) error
+	EnqueueRetryEvent(ctx context.Context, event any, processAt time.Time)
 }
 
 type asynqProducer struct {
@@ -35,18 +35,17 @@ func NewAsynqProducer(conf *configs.Config) IAsynqProducer {
 
 var _ IAsynqProducer = &asynqProducer{}
 
-func (_self *asynqProducer) EnqueueRetryEvent(ctx context.Context, event any, processAt time.Time) error {
+func (_self *asynqProducer) EnqueueRetryEvent(ctx context.Context, event any, processAt time.Time) {
 	deferFunc := logging.AppendPrefix("EnqueueEvent")
 	defer deferFunc()
 	payload, err := json.Marshal(event)
 	if err != nil {
-		return err
+		return
 	}
 	task := asynq.NewTask(RetryEvent, payload)
 	taskInfor, err := _self.client.EnqueueContext(ctx, task, asynq.ProcessAt(processAt), asynq.MaxRetry(1))
 	if err != nil {
-		return err
+		return
 	}
 	logging.Info(ctx, "%s", taskInfor.ID)
-	return nil
 }

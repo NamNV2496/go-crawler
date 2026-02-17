@@ -14,11 +14,11 @@ import (
 
 // Simple mock for testing (no gomock needed for basic tests)
 type mockSchedulerEventRepository struct {
-	createEventFunc          func(context.Context, *domain.SchedulerEvent) (int64, error)
-	getEventsFunc            func(context.Context, int32, int32) ([]*domain.SchedulerEvent, error)
-	updateEventFunc          func(context.Context, *domain.SchedulerEvent) error
-	getEventByIDFunc         func(context.Context, int64) (*domain.SchedulerEvent, error)
-	getEventsByStatusFunc    func(context.Context, domain.StatusEnum, int32) ([]*domain.SchedulerEvent, error)
+	createEventFunc       func(context.Context, *domain.SchedulerEvent) (int64, error)
+	getEventsFunc         func(context.Context, int32, int32) ([]*domain.SchedulerEvent, error)
+	updateEventFunc       func(context.Context, *domain.SchedulerEvent) error
+	getEventByIDFunc      func(context.Context, int64) (*domain.SchedulerEvent, error)
+	getEventsByStatusFunc func(context.Context, domain.StatusEnum, int32) ([]*domain.SchedulerEvent, error)
 }
 
 func (m *mockSchedulerEventRepository) CreateSchedulerEvent(ctx context.Context, event *domain.SchedulerEvent) (int64, error) {

@@ -48,10 +48,7 @@ var _ ITeleService = &teleService{}
 func (_self *teleService) SendNotify(telephone string) bool {
 	msg := tgbotapi.NewMessage(_self.bot.Self.ID, telephone)
 	_, err := _self.bot.Send(msg)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func (_self *teleService) SendMessage(message string, format string) error {

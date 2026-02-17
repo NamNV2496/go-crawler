@@ -80,7 +80,7 @@ func (_self *crawlerService) Crawl(ctx context.Context, event entity.CrawlerEven
 	// Create a new isolated session for this crawl operation
 	session := newCrawlSession()
 	if _self.isDistributedWorkerPool {
-		_self.distributedWorkerPool.ExecuteOnServerAsync(ctx, &server.ExecutionRequest{}, make(chan *server.ExecutionResponse))
+		return _self.distributedWorkerPool.ExecuteOnServerAsync(ctx, &server.ExecutionRequest{}, make(chan *server.ExecutionResponse))
 	} else {
 		_self.workerPool.Execute(
 			func() (any, error) {
@@ -493,10 +493,7 @@ func (s *crawlSession) shouldCrawl(url string, depth, maxDepth int64) bool {
 	}
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	if s.visited[url] {
-		return false
-	}
-	return true
+	return !s.visited[url]
 }
 
 func (s *crawlSession) markAsVisited(url string) {
