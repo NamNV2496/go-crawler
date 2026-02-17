@@ -109,7 +109,7 @@ func startConsumer(
 						return
 					}
 					if err := crawlerService.Crawl(ctx, url); err != nil {
-						logging.Error(ctx, err.Error())
+						logging.Error(ctx, "%s", err.Error())
 						return
 					}
 					logging.Debug(ctx, "message at topic:%v partition:%v offset:%v\t%s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
