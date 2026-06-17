@@ -49,12 +49,12 @@ type ServerExecutor struct {
 }
 
 // NewServerExecutor creates a new server executor
-func NewServerExecutor(timeout time.Duration) IServerExecutor {
+func NewServerExecutor() IServerExecutor {
 	return &ServerExecutor{
 		httpClient: &http.Client{
-			Timeout: timeout,
+			Timeout: 5 * time.Second,
 		},
-		timeout: timeout,
+		timeout: 5 * time.Second,
 	}
 }
 

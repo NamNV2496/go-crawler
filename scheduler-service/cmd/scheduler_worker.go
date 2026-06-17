@@ -35,6 +35,7 @@ func InvokeSchedulerWorker(invokers ...any) *fx.App {
 			fx.Annotate(service.NewUrlCronJob, fx.As(new(service.ICrawlerCronJob))),
 			// rate limit
 			fx.Annotate(distributedlock.NewDistributedLock, fx.As(new(distributedlock.IDistributedLock))),
+			fx.Annotate(repository.NewBatchStatusUpdater, fx.As(new(repository.IBatchStatusUpdater))),
 		),
 		fx.Supply(
 			config,

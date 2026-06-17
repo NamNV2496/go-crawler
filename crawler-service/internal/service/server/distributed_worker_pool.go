@@ -24,11 +24,11 @@ type DistributedWorkerPool struct {
 	requestPoint   int64
 }
 
-func NewDistributedWorkerPool(sm IServerManager, se IServerExecutor, requestPoint int64) *DistributedWorkerPool {
+func NewDistributedWorkerPool(sm IServerManager, se IServerExecutor) *DistributedWorkerPool {
 	return &DistributedWorkerPool{
 		serverManager:  sm,
 		serverExecutor: se,
-		requestPoint:   requestPoint,
+		requestPoint:   5,
 	}
 }
 

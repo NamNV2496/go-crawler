@@ -32,14 +32,12 @@ type BatchStatusUpdater struct {
 
 func NewBatchStatusUpdater(
 	repo ISchedulerEventRepository,
-	batchSize int,
-	flushInterval time.Duration,
 ) IBatchStatusUpdater {
 	bsu := &BatchStatusUpdater{
 		repo:          repo,
-		batchSize:     batchSize,
-		flushInterval: flushInterval,
-		buffer:        make([]StatusUpdate, 0, batchSize),
+		batchSize:     10,
+		flushInterval: time.Second,
+		buffer:        make([]StatusUpdate, 0, 10),
 		stopCh:        make(chan struct{}),
 	}
 

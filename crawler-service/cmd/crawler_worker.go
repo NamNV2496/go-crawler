@@ -45,6 +45,9 @@ func InvokeCrawlerWorker(invokers ...any) *fx.App {
 
 			fx.Annotate(mq.NewAsynqProducer, fx.As(new(mq.IAsynqProducer))),
 			fx.Annotate(schedulerservice.NewSchedulerService, fx.As(new(schedulerservice.ISchedulerService))),
+			fx.Annotate(server.NewDistributedWorkerPool, fx.As(new(server.IDistributedWorkerPool))),
+			fx.Annotate(server.NewServerExecutor, fx.As(new(server.IServerExecutor))),
+			fx.Annotate(server.NewServerManager, fx.As(new(server.IServerManager))),
 		),
 		fx.Supply(
 			config,
